@@ -1,0 +1,67 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgb(0 0 0 / 0.55);
+  animation: fade 0.15s ease-out;
+}
+
+.dialog {
+  width: min(420px, 100%);
+  padding: 32px 28px 24px;
+  border-radius: 32px;
+  background: #fff;
+  box-shadow: var(--shadow);
+  text-align: center;
+  animation: pop 0.2s ease-out;
+
+  h2 {
+    margin: 16px 0 8px;
+    font-size: 24px;
+  }
+
+  p {
+    margin-bottom: 24px;
+    color: var(--muted);
+    white-space: pre-line;
+  }
+}
+
+.icono {
+  display: inline-grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 28px;
+  font-weight: 700;
+
+  &.exito {
+    background: var(--ok);
+  }
+
+  &.error {
+    background: var(--red);
+  }
+
+  &.info {
+    background: #0074e8;
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}

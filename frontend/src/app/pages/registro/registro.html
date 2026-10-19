@@ -1,0 +1,123 @@
+<app-mosaico-fondo />
+
+<section class="tarjeta">
+  <img src="favicon.svg" alt="" width="48" height="48" />
+  <h1>Creá tu cuenta en Mosaico</h1>
+  <p class="sub">Compartí ideas y encontrá inspiración</p>
+
+  <form [formGroup]="form" (ngSubmit)="enviar()" novalidate>
+    <div class="foto">
+      @if (vistaPrevia(); as src) {
+        <img class="avatar grande" [src]="src" alt="Vista previa de tu foto de perfil" />
+      } @else {
+        <span class="avatar grande" aria-hidden="true">+</span>
+      }
+      <div class="field">
+        <label for="imagenPerfil">Foto de perfil (opcional)</label>
+        <input id="imagenPerfil" type="file" accept="image/jpeg,image/png,image/webp,image/gif" (change)="elegirImagen($event)" />
+        @if (errorImagen(); as e) {
+          <span class="error">{{ e }}</span>
+        } @else {
+          <span class="hint">JPG, PNG, WEBP o GIF · hasta 5 MB</span>
+        }
+      </div>
+    </div>
+
+    <div class="fila">
+      <div class="field">
+        <label for="nombre">Nombre</label>
+        <input id="nombre" type="text" formControlName="nombre" autocomplete="given-name" />
+        @if (f.nombre.touched && f.nombre.invalid) {
+          <span class="error">Ingresá tu nombre.</span>
+        }
+      </div>
+      <div class="field">
+        <label for="apellido">Apellido</label>
+        <input id="apellido" type="text" formControlName="apellido" autocomplete="family-name" />
+        @if (f.apellido.touched && f.apellido.invalid) {
+          <span class="error">Ingresá tu apellido.</span>
+        }
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="correo">Correo electrónico</label>
+      <input id="correo" type="email" formControlName="correo" autocomplete="email" />
+      @if (f.correo.touched && f.correo.invalid) {
+        <span class="error">
+          @if (f.correo.errors?.['required']) { Ingresá tu correo. }
+          @else { El correo no tiene un formato válido. }
+        </span>
+      }
+    </div>
+
+    <div class="field">
+      <label for="nombreUsuario">Nombre de usuario</label>
+      <input id="nombreUsuario" type="text" formControlName="nombreUsuario" autocomplete="username" />
+      @if (f.nombreUsuario.touched && f.nombreUsuario.invalid) {
+        <span class="error">
+          @if (f.nombreUsuario.errors?.['required']) { Elegí un nombre de usuario. }
+          @else { Entre 3 y 20 caracteres: letras, números, guion bajo o punto. }
+        </span>
+      } @else {
+        <span class="hint">Tiene que ser único. Lo vamos a verificar al crear la cuenta.</span>
+      }
+    </div>
+
+    <div class="fila">
+      <div class="field">
+        <label for="password">Contraseña</label>
+        <input id="password" [type]="verPassword() ? 'text' : 'password'" formControlName="password" autocomplete="new-password" />
+        @if (f.password.touched && f.password.errors?.['required']) {
+          <span class="error">Ingresá una contraseña.</span>
+        }
+      </div>
+      <div class="field">
+        <label for="repetirPassword">Repetir contraseña</label>
+        <input id="repetirPassword" [type]="verPassword() ? 'text' : 'password'" formControlName="repetirPassword" autocomplete="new-password" />
+        @if (f.repetirPassword.touched && f.repetirPassword.errors?.['required']) {
+          <span class="error">Repetí la contraseña.</span>
+        } @else if (f.repetirPassword.touched && form.errors?.['noCoinciden']) {
+          <span class="error">Las contraseñas no coinciden.</span>
+        }
+      </div>
+    </div>
+
+    <ul class="requisitos" aria-label="Requisitos de la contraseña">
+      <li [class.ok]="requisitos.largo">Al menos 8 caracteres</li>
+      <li [class.ok]="requisitos.mayuscula">Una mayúscula</li>
+      <li [class.ok]="requisitos.numero">Un número</li>
+    </ul>
+    <label class="ver-pass">
+      <input type="checkbox" [checked]="verPassword()" (change)="verPassword.set(!verPassword())" />
+      Mostrar contraseñas
+    </label>
+
+    <div class="field">
+      <label for="fechaNacimiento">Fecha de nacimiento</label>
+      <input id="fechaNacimiento" type="date" formControlName="fechaNacimiento" min="1900-01-01" [max]="hoy" autocomplete="bday" />
+      @if (f.fechaNacimiento.touched && f.fechaNacimiento.invalid) {
+        <span class="error">
+          @if (f.fechaNacimiento.errors?.['required']) { Ingresá tu fecha de nacimiento. }
+          @else if (f.fechaNacimiento.errors?.['fechaFutura']) { La fecha no puede ser futura. }
+          @else { La fecha no es válida. }
+        </span>
+      }
+    </div>
+
+    <div class="field">
+      <label for="descripcion">Descripción breve</label>
+      <textarea id="descripcion" formControlName="descripcion" maxlength="200" rows="3"></textarea>
+      <span class="hint">{{ f.descripcion.value.length }}/200</span>
+      @if (f.descripcion.touched && f.descripcion.invalid) {
+        <span class="error">Contanos algo sobre vos en pocas palabras.</span>
+      }
+    </div>
+
+    <button type="submit" class="btn primary block" [disabled]="cargando()">
+      {{ cargando() ? 'Creando cuenta…' : 'Crear cuenta' }}
+    </button>
+  </form>
+
+  <p class="cambio">¿Ya tenés cuenta? <a routerLink="/login">Iniciá sesión</a></p>
+</section>

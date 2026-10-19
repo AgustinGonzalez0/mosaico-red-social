@@ -1,0 +1,37 @@
+<article class="pin">
+  @if (publicacion().imagen; as src) {
+    <img
+      class="foto"
+      [src]="src"
+      [attr.width]="publicacion().ancho"
+      [attr.height]="publicacion().alto"
+      [alt]="publicacion().titulo"
+      loading="lazy"
+    />
+  }
+  <div class="cuerpo">
+    <h3>{{ publicacion().titulo }}</h3>
+    <p>{{ publicacion().mensaje }}</p>
+    <div class="pie">
+      <div class="autor">
+        @if (auth.urlImagen(publicacion().autor.imagenPerfil); as foto) {
+          <img class="avatar" [src]="foto" alt="" width="28" height="28" />
+        } @else {
+          <span class="avatar chico" aria-hidden="true">{{ inicial() }}</span>
+        }
+        <span>{{ publicacion().autor.nombreUsuario }}</span>
+      </div>
+      <button
+        type="button"
+        class="corazon"
+        [class.activo]="leGusta()"
+        [attr.aria-pressed]="leGusta()"
+        [attr.aria-label]="leGusta() ? 'Quitar me gusta' : 'Dar me gusta'"
+        (click)="alternarMeGusta()"
+      >
+        <span aria-hidden="true">{{ leGusta() ? '♥' : '♡' }}</span>
+        {{ cantidad() }}
+      </button>
+    </div>
+  </div>
+</article>

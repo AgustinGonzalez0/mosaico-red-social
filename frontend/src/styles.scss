@@ -1,0 +1,178 @@
+:root {
+  --red: #e60023;
+  --red-dark: #ad081b;
+  --ink: #111111;
+  --muted: #5f5f5f;
+  --line: #cdcdcd;
+  --surface: #efefef;
+  --surface-hover: #e2e2e2;
+  --bg: #ffffff;
+  --ok: #0a7a43;
+  --radius: 16px;
+  --shadow: 0 8px 30px rgb(0 0 0 / 0.12);
+  --font: -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+:focus-visible {
+  outline: 3px solid #0074e8;
+  outline-offset: 2px;
+}
+
+/* ---------- Botones ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 24px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover {
+    background: var(--surface-hover);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  &.primary {
+    background: var(--red);
+    color: #fff;
+
+    &:hover:not(:disabled) {
+      background: var(--red-dark);
+    }
+  }
+
+  &.block {
+    width: 100%;
+  }
+}
+
+/* ---------- Formularios ---------- */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  label,
+  .label {
+    font-size: 14px;
+    font-weight: 500;
+    padding-left: 4px;
+  }
+
+  input:not([type='file']),
+  textarea {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid var(--line);
+    border-radius: 16px;
+    background: #fff;
+    color: var(--ink);
+    font: inherit;
+    transition: border-color 0.15s;
+
+    &:hover {
+      border-color: #9a9a9a;
+    }
+
+    &:focus {
+      border-color: #0074e8;
+      outline: none;
+    }
+
+    &.ng-invalid.ng-touched {
+      border-color: var(--red);
+    }
+  }
+
+  textarea {
+    min-height: 90px;
+    resize: vertical;
+  }
+
+  .hint {
+    font-size: 13px;
+    color: var(--muted);
+    padding-left: 4px;
+  }
+
+  .error {
+    font-size: 13px;
+    color: var(--red);
+    padding-left: 4px;
+    white-space: pre-line;
+  }
+}
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--muted);
+  font-weight: 700;
+  object-fit: cover;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}

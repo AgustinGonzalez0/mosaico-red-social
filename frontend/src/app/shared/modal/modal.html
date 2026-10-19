@@ -1,0 +1,25 @@
+@if (modal.actual(); as m) {
+  <div class="backdrop" (click)="modal.cerrar()">
+    <div
+      class="dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-titulo"
+      aria-describedby="modal-mensaje"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="icono" [class]="m.tipo" aria-hidden="true">
+        @switch (m.tipo) {
+          @case ('exito') { ✓ }
+          @case ('error') { ! }
+          @default { i }
+        }
+      </div>
+      <h2 id="modal-titulo">{{ m.titulo }}</h2>
+      <p id="modal-mensaje">{{ m.mensaje }}</p>
+      <button #boton type="button" class="btn primary block" (click)="modal.cerrar()">
+        {{ m.textoBoton ?? 'Entendido' }}
+      </button>
+    </div>
+  </div>
+}

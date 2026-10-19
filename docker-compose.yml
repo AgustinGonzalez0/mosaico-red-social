@@ -1,0 +1,13 @@
+
+services:
+  mongodb:
+    image: mongo:7
+    container_name: mosaico-mongodb
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - mosaico_mongo_data:/data/db
+
+volumes:
+  mosaico_mongo_data:

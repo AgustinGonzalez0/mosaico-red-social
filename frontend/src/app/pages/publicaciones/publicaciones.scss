@@ -1,0 +1,26 @@
+.encabezado {
+  max-width: 1400px;
+  margin: 8px auto 20px;
+
+  h1 {
+    font-size: 28px;
+  }
+
+  p {
+    color: var(--muted);
+  }
+}
+
+/* Grilla tipo "masonry": columnas CSS donde cada pin conserva su altura natural. */
+.muro {
+  max-width: 1400px;
+  margin: 0 auto;
+  columns: 5 236px;
+  column-gap: 16px;
+
+  app-post-card {
+    display: block;
+    break-inside: avoid;
+    margin-bottom: 16px;
+  }
+}

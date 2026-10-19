@@ -1,0 +1,31 @@
+<header class="barra">
+  <a routerLink="/publicaciones" class="marca" aria-label="Mosaico, ir al inicio">
+    <img src="favicon.svg" alt="" width="32" height="32" />
+    <span>Mosaico</span>
+  </a>
+
+  <nav class="enlaces" aria-label="Principal">
+    <a routerLink="/publicaciones" routerLinkActive="activo">Inicio</a>
+    <a routerLink="/mi-perfil" routerLinkActive="activo">Mi perfil</a>
+  </nav>
+
+  <div class="acciones">
+    @if (auth.usuario(); as u) {
+      <a routerLink="/mi-perfil" class="yo" [attr.aria-label]="'Perfil de ' + u.nombreUsuario">
+        @if (auth.urlImagen(u.imagenPerfil); as foto) {
+          <img class="avatar" [src]="foto" alt="" width="36" height="36" />
+        } @else {
+          <span class="avatar inicial" aria-hidden="true">{{ inicial() }}</span>
+        }
+      </a>
+      <button type="button" class="btn" (click)="salir()">Cerrar sesión</button>
+    } @else {
+      <a routerLink="/login" class="btn">Iniciar sesión</a>
+      <a routerLink="/registro" class="btn primary">Registrarse</a>
+    }
+  </div>
+</header>
+
+<main class="contenido">
+  <router-outlet />
+</main>

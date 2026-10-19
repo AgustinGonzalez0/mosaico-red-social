@@ -1,0 +1,53 @@
+<app-mosaico-fondo />
+
+<section class="tarjeta">
+  <img src="favicon.svg" alt="" width="48" height="48" />
+  <h1>Te damos la bienvenida a Mosaico</h1>
+  <p class="sub">Iniciá sesión para descubrir y compartir ideas</p>
+
+  <form [formGroup]="form" (ngSubmit)="enviar()" novalidate>
+    <div class="field">
+      <label for="usuario">Correo o nombre de usuario</label>
+      <input id="usuario" type="text" formControlName="usuario" autocomplete="username" />
+      @if (f.usuario.touched && f.usuario.invalid) {
+        <span class="error">
+          @if (f.usuario.errors?.['required']) { Ingresá tu correo o nombre de usuario. }
+          @else { Debe tener al menos 3 caracteres. }
+        </span>
+      }
+    </div>
+
+    <div class="field">
+      <label for="password">Contraseña</label>
+      <div class="con-boton">
+        <input
+          id="password"
+          [type]="verPassword() ? 'text' : 'password'"
+          formControlName="password"
+          autocomplete="current-password"
+        />
+        <button
+          type="button"
+          class="ojo"
+          [attr.aria-label]="verPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+          [attr.aria-pressed]="verPassword()"
+          (click)="verPassword.set(!verPassword())"
+        >
+          {{ verPassword() ? 'Ocultar' : 'Ver' }}
+        </button>
+      </div>
+      @if (f.password.touched && f.password.invalid) {
+        <span class="error">
+          @if (f.password.errors?.['required']) { Ingresá tu contraseña. }
+          @else { Debe tener al menos 8 caracteres, una mayúscula y un número. }
+        </span>
+      }
+    </div>
+
+    <button type="submit" class="btn primary block" [disabled]="cargando()">
+      {{ cargando() ? 'Ingresando…' : 'Iniciar sesión' }}
+    </button>
+  </form>
+
+  <p class="cambio">¿Todavía no tenés cuenta? <a routerLink="/registro">Registrate</a></p>
+</section>

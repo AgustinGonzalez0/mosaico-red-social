@@ -1,0 +1,23 @@
+
+# Dependencias
+node_modules/
+**/node_modules/
+
+# Secretos y configuraciones locales
+.env
+.env.*
+!.env.example
+
+# Compilaciones
+dist/
+.angular/
+coverage/
+
+# Archivos locales
+uploads/
+**/uploads/
+*.log
+
+# Sistema operativo
+.DS_Store
+Thumbs.db

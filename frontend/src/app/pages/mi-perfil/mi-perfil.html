@@ -1,0 +1,46 @@
+@if (usuario(); as u) {
+  <section class="perfil">
+    @if (foto(); as src) {
+      <img class="avatar enorme" [src]="src" [alt]="'Foto de perfil de ' + u.nombreUsuario" />
+    } @else {
+      <span class="avatar enorme inicial" aria-hidden="true">{{ iniciales() }}</span>
+    }
+
+    <h1>{{ u.nombre }} {{ u.apellido }}</h1>
+    <p class="usuario">&#64;{{ u.nombreUsuario }}</p>
+    <p class="descripcion">{{ u.descripcion }}</p>
+
+    <dl class="datos">
+      <div>
+        <dt>Correo</dt>
+        <dd>{{ u.correo }}</dd>
+      </div>
+      <div>
+        <dt>Nacimiento</dt>
+        <dd>{{ u.fechaNacimiento | date: 'longDate' : 'UTC' }}</dd>
+      </div>
+      <div>
+        <dt>Perfil</dt>
+        <dd>
+          <span class="chip" [class.admin]="u.perfil === 'administrador'">
+            {{ u.perfil === 'administrador' ? 'Administrador' : 'Usuario' }}
+          </span>
+        </dd>
+      </div>
+    </dl>
+  </section>
+
+  <section class="mis-pines">
+    <h2>Mis publicaciones</h2>
+    <div class="vacio">
+      <p>Tus últimas publicaciones y sus comentarios van a aparecer acá.</p>
+      <a routerLink="/publicaciones" class="btn">Explorar publicaciones</a>
+    </div>
+  </section>
+} @else {
+  <section class="perfil">
+    <h1>Todavía no iniciaste sesión</h1>
+    <p class="descripcion">Ingresá para ver tu perfil.</p>
+    <a routerLink="/login" class="btn primary">Iniciar sesión</a>
+  </section>
+}

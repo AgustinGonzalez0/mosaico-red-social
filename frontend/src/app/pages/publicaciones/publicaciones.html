@@ -1,0 +1,10 @@
+<div class="encabezado">
+  <h1>Descubrí ideas</h1>
+  <p>Publicaciones de la comunidad Mosaico</p>
+</div>
+
+<div class="muro">
+  @for (p of publicaciones; track p.id) {
+    <app-post-card [publicacion]="p" />
+  }
+</div>
