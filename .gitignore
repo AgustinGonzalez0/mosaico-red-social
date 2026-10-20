@@ -21,3 +21,6 @@ uploads/
 # Sistema operativo
 .DS_Store
 Thumbs.db
+
+# Cache de compilación de TypeScript
+*.tsbuildinfo

@@ -3,8 +3,14 @@
   <p>Publicaciones de la comunidad Mosaico</p>
 </div>
 
-<div class="muro">
-  @for (p of publicaciones; track p.id) {
-    <app-post-card [publicacion]="p" />
-  }
-</div>
+@if (publicaciones.length) {
+  <div class="muro">
+    @for (p of publicaciones; track p.id) {
+      <app-post-card [publicacion]="p" />
+    }
+  </div>
+} @else {
+  <div class="vacio">
+    <p>Todavía no hay publicaciones. Cuando la comunidad empiece a compartir, las vas a ver acá.</p>
+  </div>
+}
