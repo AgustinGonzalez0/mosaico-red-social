@@ -38,7 +38,13 @@ export class AuthService {
 
   /** URL absoluta de una imagen servida por el backend (o null si no hay). */
   urlImagen(ruta: string | null | undefined): string | null {
-    return ruta ? `${environment.apiUrl}${ruta}` : null;
+    if (!ruta) return null;
+
+    if (/^https?:\/\//i.test(ruta)) {
+      return ruta;
+    }
+
+    return `${environment.apiUrl}${ruta}`;
   }
 
   private guardarSesion(s: Sesion): void {
