@@ -2,10 +2,17 @@
   overflow: hidden;
   border-radius: 24px;
   background: #fff;
-  transition: box-shadow 0.2s;
+  transition:
+    box-shadow 0.2s,
+    transform 0.2s;
 
   &:hover {
     box-shadow: var(--shadow);
+    transform: translateY(-2px);
+  }
+
+  &[aria-busy='true'] {
+    cursor: progress;
   }
 }
 
@@ -17,7 +24,7 @@
 }
 
 .cuerpo {
-  padding: 10px 6px 4px;
+  padding: 10px 6px 6px;
 
   h3 {
     font-size: 15px;
@@ -29,9 +36,10 @@
     margin-top: 2px;
     color: var(--muted);
     font-size: 14px;
+    overflow-wrap: anywhere;
     display: -webkit-box;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
@@ -50,51 +58,101 @@
   align-items: center;
   gap: 8px;
   min-width: 0;
-  font-size: 13px;
-  font-weight: 500;
-
-  span:last-child {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
 
   .avatar {
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
   }
 
   .chico {
     background: var(--red);
     color: #fff;
-    font-size: 13px;
+    font-size: 14px;
   }
 }
 
-.corazon {
+.datos {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.2;
+
+  .nombre {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  time {
+    color: var(--muted);
+    font-size: 12px;
+  }
+}
+
+.acciones {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 2px;
+}
+
+.accion {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  min-height: 36px;
   padding: 6px 10px;
   border: 0;
-  border-radius: 16px;
+  border-radius: 18px;
   background: transparent;
   color: var(--muted);
   font: inherit;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
 
-  &:hover {
+  svg {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    transition: transform 0.15s;
+  }
+
+  &:hover:not(:disabled) {
     background: var(--surface);
   }
 
-  &.activo {
-    color: var(--red);
+  &:active:not(:disabled) svg {
+    transform: scale(0.8);
   }
 
-  span {
-    font-size: 18px;
-    line-height: 1;
+  &:disabled {
+    opacity: 0.55;
+    cursor: progress;
+  }
+}
+
+.corazon.activo {
+  color: var(--red);
+
+  svg {
+    fill: currentColor;
+  }
+}
+
+.eliminar {
+  svg {
+    fill: currentColor;
+    stroke: none;
+  }
+
+  &:hover:not(:disabled) {
+    background: #fde8ea;
+    color: var(--red-dark);
   }
 }

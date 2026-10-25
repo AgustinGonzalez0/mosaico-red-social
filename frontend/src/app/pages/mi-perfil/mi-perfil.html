@@ -1,5 +1,7 @@
 @if (usuario(); as u) {
   <section class="perfil">
+    <div class="portada" aria-hidden="true"></div>
+
     @if (foto(); as src) {
       <img class="avatar enorme" [src]="src" [alt]="'Foto de perfil de ' + u.nombreUsuario" />
     } @else {
@@ -27,15 +29,74 @@
           </span>
         </dd>
       </div>
+      @if (total() !== null) {
+        <div>
+          <dt>Publicaciones</dt>
+          <dd>{{ total() }}</dd>
+        </div>
+      }
     </dl>
   </section>
 
-  <section class="mis-pines">
-    <h2>Mis publicaciones</h2>
-    <div class="vacio">
-      <p>Tus últimas publicaciones y sus comentarios van a aparecer acá.</p>
-      <a routerLink="/publicaciones" class="btn">Explorar publicaciones</a>
-    </div>
+  <section class="mis-pines" aria-labelledby="titulo-pines">
+    <h2 id="titulo-pines">Mis últimas publicaciones</h2>
+
+    @if (error(); as e) {
+      <div class="vacio" role="alert">
+        <p>{{ e }}</p>
+        <button type="button" class="btn" (click)="reintentar()">Reintentar</button>
+      </div>
+    } @else if (cargando()) {
+      <ul class="lista" aria-busy="true" aria-label="Cargando tus publicaciones">
+        @for (n of esqueletos; track n) {
+          <li class="esqueleto"></li>
+        }
+      </ul>
+    } @else if (publicaciones().length) {
+      <ul class="lista">
+        @for (p of publicaciones(); track p.id) {
+          <li class="item">
+            <app-post-card [publicacion]="p" (eliminada)="alEliminar($event)" />
+
+            <section class="comentarios" [attr.aria-label]="'Comentarios de ' + p.titulo">
+              @let lista = comentarios()[p.id];
+              <h3>
+                Comentarios
+                @if (lista) {
+                  <span class="cuenta">{{ lista.total }}</span>
+                }
+              </h3>
+              @if (!lista) {
+                <p class="sin">No pudimos cargar los comentarios de esta publicación.</p>
+              } @else if (lista.data.length) {
+                <ul>
+                  @for (c of lista.data; track c.id) {
+                    <li>
+                      <strong>{{ c.autor.nombreUsuario }}</strong>
+                      <time [attr.datetime]="c.createdAt">{{ c.createdAt | date: 'd MMM y' }}</time>
+                      @if (c.modificado) {
+                        <em>(editado)</em>
+                      }
+                      <p>{{ c.mensaje }}</p>
+                    </li>
+                  }
+                </ul>
+                @if (lista.hasMore) {
+                  <p class="sin">Mostrando los {{ lista.data.length }} más recientes de {{ lista.total }}.</p>
+                }
+              } @else {
+                <p class="sin">Todavía no hay comentarios en esta publicación.</p>
+              }
+            </section>
+          </li>
+        }
+      </ul>
+    } @else {
+      <div class="vacio">
+        <p>Todavía no publicaste nada. Cuando lo hagas, tus últimas tres publicaciones van a aparecer acá.</p>
+        <a routerLink="/publicaciones" class="btn primary">Ir a publicar</a>
+      </div>
+    }
   </section>
 } @else {
   <section class="perfil">

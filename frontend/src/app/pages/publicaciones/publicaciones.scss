@@ -1,6 +1,17 @@
-.encabezado {
+.encabezado,
+.contenido {
   max-width: 1400px;
-  margin: 8px auto 20px;
+  margin: 0 auto;
+}
+
+.encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 8px;
+  margin-bottom: 20px;
 
   h1 {
     font-size: 28px;
@@ -11,26 +22,132 @@
   }
 }
 
+.herramientas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Selector de orden: dos botones tipo "pastilla" donde solo uno está activo. */
+.orden {
+  display: inline-flex;
+  padding: 4px;
+  border-radius: 28px;
+  background: var(--surface);
+
+  button {
+    min-height: 40px;
+    padding: 0 18px;
+    border: 0;
+    border-radius: 24px;
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+      background 0.15s,
+      color 0.15s;
+
+    &:hover:not(.activo) {
+      background: var(--surface-hover);
+    }
+
+    &.activo {
+      background: var(--ink);
+      color: #fff;
+    }
+  }
+}
+
 /* Grilla tipo "masonry": columnas CSS donde cada pin conserva su altura natural. */
 .muro {
-  max-width: 1400px;
-  margin: 0 auto;
   columns: 5 236px;
   column-gap: 16px;
+  transition: opacity 0.2s;
 
-  app-post-card {
+  app-post-card,
+  .esqueleto {
     display: block;
     break-inside: avoid;
     margin-bottom: 16px;
   }
+
+  &.recargando {
+    opacity: 0.55;
+    pointer-events: none;
+  }
 }
 
-.vacio {
-  max-width: 1400px;
-  margin: 0 auto;
+.esqueleto {
+  border-radius: 24px;
+  background: linear-gradient(100deg, var(--surface) 30%, #f7f7f7 50%, var(--surface) 70%) 0 0 / 200% 100%;
+  animation: brillo 1.4s linear infinite;
+}
+
+.aviso {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
   padding: 40px 20px;
   border: 2px dashed var(--line);
   border-radius: 24px;
   color: var(--muted);
   text-align: center;
+
+  &.error {
+    border-color: var(--red);
+    color: var(--ink);
+    white-space: pre-line;
+  }
+}
+
+.botones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.paginacion {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 16px;
+  font-weight: 600;
+
+  span {
+    min-width: 120px;
+    text-align: center;
+  }
+}
+
+@keyframes brillo {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .herramientas {
+    width: 100%;
+  }
+
+  /* El selector de orden ocupa su propia fila y el botón de crear, la siguiente. */
+  .orden {
+    flex: 1 1 100%;
+
+    button {
+      flex: 1;
+      padding: 0 8px;
+      white-space: nowrap;
+    }
+  }
+
+  .herramientas .btn {
+    flex: 1 1 100%;
+  }
 }

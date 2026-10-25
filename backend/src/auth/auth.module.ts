@@ -18,5 +18,7 @@ import { AuthService } from './auth.service.js';
   ],
   controllers: [AuthController],
   providers: [AuthService],
+  // Se exporta JwtModule para que otros módulos puedan usar el JwtAuthGuard (necesita JwtService).
+  exports: [JwtModule],
 })
 export class AuthModule {}

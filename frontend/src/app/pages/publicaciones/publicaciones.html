@@ -1,16 +1,76 @@
 <div class="encabezado">
-  <h1>Descubrí ideas</h1>
-  <p>Publicaciones de la comunidad Mosaico</p>
+  <div>
+    <h1>Descubrí ideas</h1>
+    <p>Publicaciones de la comunidad Mosaico</p>
+  </div>
+
+  <div class="herramientas">
+    <div class="orden" role="group" aria-label="Ordenar publicaciones">
+      @for (o of ordenes; track o.valor) {
+        <button
+          type="button"
+          [class.activo]="orden() === o.valor"
+          [attr.aria-pressed]="orden() === o.valor"
+          (click)="cambiarOrden(o.valor)"
+        >
+          {{ o.texto }}
+        </button>
+      }
+    </div>
+    <button type="button" class="btn primary" (click)="creando.set(true)">
+      <span aria-hidden="true">+</span> Crear publicación
+    </button>
+  </div>
 </div>
 
-@if (publicaciones.length) {
-  <div class="muro">
-    @for (p of publicaciones; track p.id) {
-      <app-post-card [publicacion]="p" />
+<div class="contenido">
+  @if (error(); as e) {
+    <div class="aviso error" role="alert">
+      <p>{{ e.mensaje }}</p>
+      <div class="botones">
+        <button type="button" class="btn" (click)="reintentar()">Reintentar</button>
+        @if (e.sesion) {
+          <a routerLink="/login" class="btn primary">Iniciar sesión</a>
+        }
+      </div>
+    </div>
+  } @else if (cargando() && !publicaciones().length) {
+    <div class="muro" aria-busy="true" aria-label="Cargando publicaciones">
+      @for (n of esqueletos; track n) {
+        <div class="esqueleto" [style.height.px]="150 + (n % 4) * 55"></div>
+      }
+    </div>
+  } @else if (publicaciones().length) {
+    <div class="muro" [class.recargando]="cargando()" [attr.aria-busy]="cargando()">
+      @for (p of publicaciones(); track p.id) {
+        <app-post-card [publicacion]="p" (eliminada)="alEliminar($event)" />
+      }
+    </div>
+
+    @if (totalPaginas() > 1) {
+      <nav class="paginacion" aria-label="Paginación">
+        <button type="button" class="btn" [disabled]="pagina() === 1 || cargando()" (click)="irAPagina(pagina() - 1)">
+          ← Anterior
+        </button>
+        <span>Página {{ pagina() }} de {{ totalPaginas() }}</span>
+        <button
+          type="button"
+          class="btn"
+          [disabled]="pagina() === totalPaginas() || cargando()"
+          (click)="irAPagina(pagina() + 1)"
+        >
+          Siguiente →
+        </button>
+      </nav>
     }
-  </div>
-} @else {
-  <div class="vacio">
-    <p>Todavía no hay publicaciones. Cuando la comunidad empiece a compartir, las vas a ver acá.</p>
-  </div>
+  } @else {
+    <div class="aviso vacio">
+      <p>Todavía no hay publicaciones. ¡Sé el primero en compartir una idea!</p>
+      <button type="button" class="btn primary" (click)="creando.set(true)">Crear publicación</button>
+    </div>
+  }
+</div>
+
+@if (creando()) {
+  <app-crear-publicacion (cerrar)="creando.set(false)" (creada)="alCrear()" />
 }

@@ -35,11 +35,43 @@ export const imageFileFilter = (
   cb(null, true);
 };
 
+export interface ImagenSubida {
+  url: string;
+  ancho: number;
+  alto: number;
+}
+
+// El MIME lo declara el cliente, así que no alcanza: comprobamos también la firma (primeros bytes) del archivo.
+function tieneFirmaDeImagen(buffer: Buffer | undefined): boolean {
+  if (!buffer) return false;
+  const empiezaCon = (...bytes: number[]) => bytes.every((byte, i) => buffer[i] === byte);
+  const texto = (desde: number, hasta: number) => buffer.toString('latin1', desde, hasta);
+
+  return (
+    empiezaCon(0xff, 0xd8, 0xff) || // JPEG
+    empiezaCon(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a) || // PNG
+    texto(0, 4) === 'GIF8' || // GIF87a / GIF89a
+    (texto(0, 4) === 'RIFF' && texto(8, 12) === 'WEBP') // WEBP
+  );
+}
+
 // Sube una imagen a Cloudinary y devuelve su URL.
 export async function guardarImagen(
   file: Express.Multer.File,
   carpeta: string,
 ): Promise<string> {
+  return (await subirImagen(file, carpeta)).url;
+}
+
+// Igual que guardarImagen, pero además devuelve las dimensiones (para reservar el espacio en la grilla).
+export async function subirImagen(
+  file: Express.Multer.File,
+  carpeta: string,
+): Promise<ImagenSubida> {
+  if (!tieneFirmaDeImagen(file.buffer)) {
+    throw new BadRequestException('El archivo no es una imagen válida');
+  }
+
   const cloud_name = process.env.CLOUDINARY_CLOUD_NAME;
   const api_key = process.env.CLOUDINARY_API_KEY;
   const api_secret = process.env.CLOUDINARY_API_SECRET;
@@ -57,7 +89,7 @@ export async function guardarImagen(
     secure: true,
   });
 
-  return new Promise<string>((resolve, reject) => {
+  return new Promise<ImagenSubida>((resolve, reject) => {
     const upload = cloudinary.uploader.upload_stream(
       {
         folder: `mosaico/${carpeta}`,
@@ -73,7 +105,11 @@ export async function guardarImagen(
           return;
         }
 
-        resolve(result.secure_url);
+        resolve({
+          url: result.secure_url,
+          ancho: result.width,
+          alto: result.height,
+        });
       },
     );
 

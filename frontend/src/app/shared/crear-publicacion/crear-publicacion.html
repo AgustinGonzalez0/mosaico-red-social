@@ -1,0 +1,65 @@
+<div class="fondo" (keydown.escape)="cancelar()">
+  <section class="ventana" role="dialog" aria-modal="true" aria-labelledby="crear-titulo">
+    <header>
+      <h2 id="crear-titulo">Crear publicación</h2>
+      <button type="button" class="cerrar" aria-label="Cerrar" [disabled]="cargando()" (click)="cancelar()">✕</button>
+    </header>
+
+    <form [formGroup]="form" (ngSubmit)="enviar()" novalidate>
+      <div class="imagen">
+        @if (vistaPrevia(); as src) {
+          <div class="previa">
+            <img [src]="src" alt="Vista previa de la imagen de tu publicación" />
+            <button type="button" class="btn quitar" [disabled]="cargando()" (click)="quitarImagen()">
+              Quitar imagen
+            </button>
+          </div>
+        } @else {
+          <label class="soltar" for="imagen">
+            <span class="mas" aria-hidden="true">+</span>
+            <strong>Elegí una imagen</strong>
+            <span class="hint">Opcional · JPG, PNG, WEBP o GIF · hasta 5 MB</span>
+          </label>
+        }
+        <input
+          id="imagen"
+          class="sr-only"
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          [disabled]="cargando()"
+          (change)="elegirImagen($event)"
+        />
+        @if (errorImagen(); as e) {
+          <span class="error" role="alert">{{ e }}</span>
+        }
+      </div>
+
+      <div class="campos">
+        <div class="field">
+          <label for="titulo">Título</label>
+          <input #titulo id="titulo" type="text" formControlName="titulo" [maxlength]="TITULO_MAX" placeholder="Dale un título a tu idea" />
+          <span class="hint">{{ f.titulo.value.length }}/{{ TITULO_MAX }}</span>
+          @if (f.titulo.touched && f.titulo.invalid) {
+            <span class="error">Escribí un título para tu publicación.</span>
+          }
+        </div>
+
+        <div class="field">
+          <label for="mensaje">Mensaje</label>
+          <textarea id="mensaje" formControlName="mensaje" [maxlength]="MENSAJE_MAX" rows="6" placeholder="Contá de qué se trata"></textarea>
+          <span class="hint">{{ f.mensaje.value.length }}/{{ MENSAJE_MAX }}</span>
+          @if (f.mensaje.touched && f.mensaje.invalid) {
+            <span class="error">Escribí un mensaje para tu publicación.</span>
+          }
+        </div>
+
+        <div class="botones">
+          <button type="button" class="btn" [disabled]="cargando()" (click)="cancelar()">Cancelar</button>
+          <button type="submit" class="btn primary" [disabled]="cargando()">
+            {{ cargando() ? 'Publicando…' : 'Publicar' }}
+          </button>
+        </div>
+      </div>
+    </form>
+  </section>
+</div>

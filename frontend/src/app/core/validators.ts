@@ -39,3 +39,9 @@ export const fechaNacimientoValida: ValidatorFn = (control: AbstractControl): Va
   if (valor < '1900-01-01') return { fechaInvalida: true };
   return null;
 };
+
+/** El texto no puede ser solo espacios (un campo vacío lo resuelve `Validators.required`). */
+export const textoNoVacio: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
+  const valor = control.value as string;
+  return valor && valor.trim() === '' ? { vacio: true } : null;
+};

@@ -51,6 +51,10 @@
   &.info {
     background: #0074e8;
   }
+
+  &.confirmar {
+    background: var(--ink);
+  }
 }
 
 @keyframes fade {
@@ -63,5 +67,14 @@
   from {
     opacity: 0;
     transform: scale(0.94);
+  }
+}
+
+.acciones {
+  display: flex;
+  gap: 12px;
+
+  .btn {
+    flex: 1;
   }
 }

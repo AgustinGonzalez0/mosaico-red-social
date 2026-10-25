@@ -1,13 +1,11 @@
 import { Component, DestroyRef, ElementRef, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { MAX_BYTES_IMAGEN, TIPOS_IMAGEN } from '../../core/imagen';
 import { AuthService, mensajeDeError } from '../../core/services/auth.service';
 import { ModalService } from '../../core/services/modal.service';
 import { fechaNacimientoValida, passwordFuerte, passwordsIguales, requisitosPassword } from '../../core/validators';
 import { MosaicoFondo } from '../../shared/mosaico-fondo/mosaico-fondo';
-
-const TIPOS_IMAGEN = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-const MAX_BYTES = 5 * 1024 * 1024;
 
 @Component({
   selector: 'app-registro',
@@ -71,7 +69,7 @@ export class Registro {
       input.value = '';
       return;
     }
-    if (archivo.size > MAX_BYTES) {
+    if (archivo.size > MAX_BYTES_IMAGEN) {
       this.errorImagen.set('La imagen no puede superar los 5 MB.');
       input.value = '';
       return;
