@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -41,7 +42,8 @@ export class Login {
       next: () => this.router.navigate(['/publicaciones']),
       error: (err) => {
         this.cargando.set(false);
-        this.modal.error('No pudimos iniciar sesión', mensajeDeError(err));
+        const mensaje = err instanceof HttpErrorResponse && err.status === 401 ? 'Contraseña incorrecta' : mensajeDeError(err);
+        this.modal.error('No pudimos iniciar sesión', mensaje);
       },
     });
   }

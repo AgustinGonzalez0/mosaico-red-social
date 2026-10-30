@@ -1,8 +1,8 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
-import { EMPTY, Subject, catchError, switchMap, tap } from 'rxjs';
+import { EMPTY, Subscription, catchError } from 'rxjs';
 import { OrdenPublicaciones, Publicacion } from '../../core/models/publicacion.model';
 import { mensajeDeError } from '../../core/services/auth.service';
 import { PublicacionesService } from '../../core/services/publicaciones.service';
@@ -23,8 +23,11 @@ const ORDENES: { valor: OrdenPublicaciones; texto: string }[] = [
   templateUrl: './publicaciones.html',
   styleUrl: './publicaciones.scss',
 })
-export class Publicaciones {
+export class Publicaciones implements OnInit {
   private readonly servicio = inject(PublicacionesService);
+  private readonly destroyRef = inject(DestroyRef);
+  private solicitud?: Subscription;
+  private numeroSolicitud = 0;
 
   protected readonly ordenes = ORDENES;
   protected readonly orden = signal<OrdenPublicaciones>('fecha');
@@ -39,79 +42,75 @@ export class Publicaciones {
   protected readonly totalPaginas = computed(() => Math.max(1, Math.ceil(this.total() / POR_PAGINA)));
   protected readonly esqueletos = Array.from({ length: 8 }, (_, i) => i);
 
-  /** Cada pedido nuevo cancela el anterior que siga en curso (switchMap): nunca se pisan los resultados. */
-  private readonly pedir$ = new Subject<void>();
+  ngOnInit(): void {
+    this.cargarPublicaciones(this.orden(), this.pagina());
+  }
 
-  constructor() {
-    this.pedir$
+  protected cargarPublicaciones(orden: OrdenPublicaciones, pagina: number): void {
+    const numeroSolicitud = ++this.numeroSolicitud;
+    const offset = (pagina - 1) * POR_PAGINA;
+
+    this.solicitud?.unsubscribe();
+    this.cargando.set(true);
+    this.error.set(null);
+
+    this.solicitud = this.servicio
+      .listarPublicaciones({ orden, offset, limit: POR_PAGINA })
       .pipe(
-        tap(() => {
-          this.cargando.set(true);
-          this.error.set(null);
+        takeUntilDestroyed(this.destroyRef),
+        catchError((err) => {
+          if (numeroSolicitud === this.numeroSolicitud) {
+            this.cargando.set(false);
+            this.error.set({
+              mensaje: mensajeDeError(err),
+              sesion: err instanceof HttpErrorResponse && err.status === 401,
+            });
+          }
+          return EMPTY;
         }),
-        switchMap(() =>
-          this.servicio
-            .listarPublicaciones({
-              orden: this.orden(),
-              offset: (this.pagina() - 1) * POR_PAGINA,
-              limit: POR_PAGINA,
-            })
-            .pipe(
-              catchError((err) => {
-                this.cargando.set(false);
-                this.error.set({
-                  mensaje: mensajeDeError(err),
-                  sesion: err instanceof HttpErrorResponse && err.status === 401,
-                });
-                return EMPTY;
-              }),
-            ),
-        ),
-        takeUntilDestroyed(inject(DestroyRef)),
       )
       .subscribe((respuesta) => {
+        if (numeroSolicitud !== this.numeroSolicitud) return;
+
         this.total.set(respuesta.total);
-        // La página quedó vacía (p. ej. se eliminaron publicaciones): se vuelve a la última que exista.
-        if (respuesta.data.length === 0 && respuesta.total > 0 && this.pagina() > 1) {
-          this.pagina.set(this.totalPaginas());
-          this.pedir$.next();
+        const ultimaPagina = Math.max(1, Math.ceil(respuesta.total / POR_PAGINA));
+        if (respuesta.data.length === 0 && respuesta.total > 0 && pagina > ultimaPagina) {
+          this.pagina.set(ultimaPagina);
+          this.cargarPublicaciones(orden, ultimaPagina);
           return;
         }
         this.publicaciones.set(respuesta.data);
         this.cargando.set(false);
       });
-
-    this.pedir$.next();
   }
 
   protected cambiarOrden(orden: OrdenPublicaciones): void {
     if (orden === this.orden()) return;
     this.orden.set(orden);
     this.pagina.set(1);
-    this.pedir$.next(); // se consulta de nuevo al backend: MongoDB ordena antes de paginar
+    this.cargarPublicaciones(orden, 1);
   }
 
   protected irAPagina(pagina: number): void {
     if (pagina < 1 || pagina > this.totalPaginas() || pagina === this.pagina()) return;
     this.pagina.set(pagina);
-    this.pedir$.next();
+    this.cargarPublicaciones(this.orden(), pagina);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   protected reintentar(): void {
-    this.pedir$.next();
+    this.cargarPublicaciones(this.orden(), this.pagina());
   }
 
   protected alCrear(): void {
-    // La nueva publicación es la más reciente: se vuelve a la primera página ordenada por fecha.
     this.creando.set(false);
     this.orden.set('fecha');
     this.pagina.set(1);
-    this.pedir$.next();
+    this.cargarPublicaciones('fecha', 1);
   }
 
   protected alEliminar(id: string): void {
     this.publicaciones.update((lista) => lista.filter((p) => p.id !== id));
-    this.pedir$.next(); // vuelve a pedir la página para rellenarla y corregir el total
+    this.cargarPublicaciones(this.orden(), this.pagina());
   }
 }
