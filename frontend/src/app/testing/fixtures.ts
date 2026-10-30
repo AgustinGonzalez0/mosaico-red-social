@@ -36,7 +36,7 @@ export function publicacionDePrueba(cambios: Partial<Publicacion> = {}): Publica
 }
 
 export function paginadoDePrueba<T>(data: T[], extra: Partial<Paginado<T>> = {}): Paginado<T> {
-  return { data, total: data.length, offset: 0, limit: 12, hasMore: false, ...extra };
+  return { data, total: data.length, offset: 0, limit: 3, hasMore: false, ...extra };
 }
 
 export function comentarioDePrueba(cambios: Partial<Comentario> = {}): Comentario {

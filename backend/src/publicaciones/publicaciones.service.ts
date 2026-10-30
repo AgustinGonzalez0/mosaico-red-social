@@ -96,10 +96,6 @@ export class PublicacionesService {
     await this.publicaciones.updateOne({ _id: id }, { $set: { activa: false } });
   }
 
-  /**
-   * Un solo "me gusta" por usuario. El filtro `meGusta: { $ne: usuario }` y el `$addToSet` se evalúan
-   * en una única operación atómica: dos clics simultáneos no pueden registrar el like dos veces.
-   */
   async darMeGusta(id: string, usuarioId: string): Promise<EstadoMeGusta> {
     const usuario = new Types.ObjectId(usuarioId);
     const actualizada = await this.publicaciones

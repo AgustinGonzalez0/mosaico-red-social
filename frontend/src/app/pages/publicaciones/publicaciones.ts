@@ -10,7 +10,7 @@ import { CrearPublicacion } from '../../shared/crear-publicacion/crear-publicaci
 import { PostCard } from '../../shared/post-card/post-card';
 
 /** Cantidad de publicaciones por página (parámetro `limit` de la API). */
-const POR_PAGINA = 12;
+const POR_PAGINA = 3;
 
 const ORDENES: { valor: OrdenPublicaciones; texto: string }[] = [
   { valor: 'fecha', texto: 'Más recientes' },

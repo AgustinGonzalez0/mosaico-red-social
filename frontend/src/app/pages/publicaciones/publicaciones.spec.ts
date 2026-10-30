@@ -50,7 +50,7 @@ describe('Publicaciones (pantalla)', () => {
     const req = pedido();
     expect(req.request.params.get('orden')).toBe('fecha');
     expect(req.request.params.get('offset')).toBe('0');
-    expect(req.request.params.get('limit')).toBe('12');
+    expect(req.request.params.get('limit')).toBe('3');
     expect(el().querySelectorAll('.esqueleto').length).toBeGreaterThan(0); // indicador de carga
 
     responder(req, ['a', 'b', 'c']);
@@ -73,21 +73,21 @@ describe('Publicaciones (pantalla)', () => {
   });
 
   it('pagina con offset y limit y muestra en qué página está', () => {
-    responder(pedido(), ['a'], 30);
+    responder(pedido(), ['a'], 9);
     expect(el().querySelector('.paginacion')!.textContent).toContain('Página 1 de 3');
     expect(boton('Anterior').disabled).toBe(true);
 
     boton('Siguiente').click();
     fixture.detectChanges();
     const segunda = pedido();
-    expect(segunda.request.params.get('offset')).toBe('12');
-    expect(segunda.request.params.get('limit')).toBe('12');
-    responder(segunda, ['b'], 30);
+    expect(segunda.request.params.get('offset')).toBe('3');
+    expect(segunda.request.params.get('limit')).toBe('3');
+    responder(segunda, ['b'], 9);
     expect(el().querySelector('.paginacion')!.textContent).toContain('Página 2 de 3');
 
     boton('Siguiente').click();
     fixture.detectChanges();
-    expect(pedido().request.params.get('offset')).toBe('24');
+    expect(pedido().request.params.get('offset')).toBe('6');
   });
 
   it('no muestra paginación si todo entra en una página', () => {
@@ -157,19 +157,19 @@ describe('Publicaciones (pantalla)', () => {
   });
 
   it('si la página actual queda vacía retrocede a la última que exista', () => {
-    responder(pedido(), ['a'], 13);
+    responder(pedido(), ['a'], 4);
     boton('Siguiente').click();
     fixture.detectChanges();
-    responder(pedido(), ['solo'], 13);
+    responder(pedido(), ['solo'], 4);
 
     const tarjeta = fixture.debugElement.query(By.directive(PostCard)).componentInstance as PostCard;
     tarjeta.eliminada.emit('solo-0');
     fixture.detectChanges();
-    responder(pedido(), [], 12); // la página 2 quedó vacía
+    responder(pedido(), [], 3); // la página 2 quedó vacía
 
     const req = pedido();
     expect(req.request.params.get('offset')).toBe('0');
-    responder(req, ['a'], 12);
+    responder(req, ['a'], 3);
     expect(el().querySelector('.paginacion')).toBeNull();
   });
 
