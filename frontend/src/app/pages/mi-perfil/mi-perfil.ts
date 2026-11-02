@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { EMPTY, Subject, catchError, forkJoin, map, of, switchMap } from 'rxjs';
@@ -20,6 +20,7 @@ const ULTIMAS = 3;
 export class MiPerfil implements OnInit {
   protected readonly auth = inject(AuthService);
   private readonly servicio = inject(PublicacionesService);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly usuario = this.auth.usuario;
   protected readonly foto = computed(() => this.auth.urlImagen(this.usuario()?.imagenPerfil));
@@ -55,7 +56,9 @@ export class MiPerfil implements OnInit {
                   catchError(() => of(null)), // si falla uno, el resto del perfil se sigue mostrando
                 ),
               );
-              return (pedidos.length ? forkJoin(pedidos) : of([])).pipe(map((pares) => ({ respuesta, pares })));
+              return (pedidos.length ? forkJoin(pedidos) : of([])).pipe(
+                map((pares) => ({ respuesta, pares })),
+              );
             }),
             catchError((err) => {
               this.error.set(mensajeDeError(err));
@@ -64,13 +67,16 @@ export class MiPerfil implements OnInit {
             }),
           );
         }),
-        takeUntilDestroyed(),
+        takeUntilDestroyed(this.destroyRef),
       )
       .subscribe(({ respuesta, pares }) => {
         this.publicaciones.set(respuesta.data);
         this.total.set(respuesta.total);
         this.comentarios.set(
-          Object.fromEntries(pares.filter((par) => par !== null)) as Record<string, Paginado<Comentario>>,
+          Object.fromEntries(pares.filter((par) => par !== null)) as Record<
+            string,
+            Paginado<Comentario>
+          >,
         );
         this.error.set(null);
         this.cargando.set(false);

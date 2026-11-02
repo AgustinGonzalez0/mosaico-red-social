@@ -43,6 +43,22 @@ Todas las rutas de publicaciones exigen `Authorization: Bearer <JWT>`. El `JwtAu
 | `DELETE /publicaciones/:id/me-gusta` | Quita el "me gusta" propio. Devuelve `{ meGusta, leGusta }` | 200 · 400 · 401 · 404 · 409 no había dado me gusta |
 | `GET /publicaciones/:id/comentarios?offset=0&limit=12` | Solo lectura (Mi Perfil). Los comentarios se escriben recién en el Sprint 3 | 200 · 400 · 401 · 404 |
 
+## Sprint 3
+
+El detalle está en `/publicaciones/:id`: muestra la publicación ampliada y sus comentarios, permite crear y editar comentarios propios y carga bloques de cinco con `offset`, `limit` y `hasMore`. El muro general conserva Anterior/Siguiente del Sprint 2.
+
+| Endpoint nuevo | Comportamiento |
+|---|---|
+| `GET /publicaciones/:id` | Devuelve una publicación activa, su autor y el estado de Me gusta. IDs mal formados: 400; inexistentes o eliminadas: 404. |
+| `POST /publicaciones/:id/comentarios` | Crea un comentario validado; su autor sale del JWT. |
+| `PUT /publicaciones/:id/comentarios/:comentarioId` | Edita un comentario propio en una publicación activa y marca `modificado: true`. |
+| `POST /auth/autorizar` | Comprueba el JWT Bearer y la cuenta actual; devuelve los datos públicos del usuario. |
+| `POST /auth/refrescar` | Renueva exclusivamente un JWT Bearer vigente por otros 15 minutos. |
+
+La aplicación autoriza el token almacenado al arrancar. A los diez minutos ofrece extender la sesión mediante un modal; al vencer o recibir un 401 protegido cierra sesión y envía al login. Se retiraron el refresh token de siete días, `/auth/refresh` y el endpoint vacío `/auth/logout`; el cierre de sesión es local.
+
+El [informe de corrección y defensa oral](DEFENSA_SPRINT_3.md) incluye la auditoría, los resultados de las pruebas, los archivos modificados y los métodos con líneas exactas.
+
 ### Tests
 
 ```bash

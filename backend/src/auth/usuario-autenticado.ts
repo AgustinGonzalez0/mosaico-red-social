@@ -1,12 +1,7 @@
 import type { Request } from 'express';
-import type { Perfil } from '../users/schemas/user.schema.js';
+import type { UsersService } from '../users/users.service.js';
 
 /** Usuario ya verificado por el JwtAuthGuard. El perfil sale de la base de datos, no del token. */
-export interface UsuarioAutenticado {
-  id: string;
-  nombreUsuario: string;
-  imagenPerfil: string | null;
-  perfil: Perfil;
-}
+export type UsuarioAutenticado = ReturnType<UsersService['toPublic']>;
 
 export type SolicitudAutenticada = Request & { usuario: UsuarioAutenticado };

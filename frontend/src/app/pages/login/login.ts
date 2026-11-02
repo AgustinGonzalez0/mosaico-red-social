@@ -42,7 +42,12 @@ export class Login {
       next: () => this.router.navigate(['/publicaciones']),
       error: (err) => {
         this.cargando.set(false);
-        const mensaje = err instanceof HttpErrorResponse && err.status === 401 ? 'Contraseña incorrecta' : mensajeDeError(err);
+        const mensajeServidor = mensajeDeError(err);
+        const credencialesInvalidas =
+          err instanceof HttpErrorResponse &&
+          err.status === 401 &&
+          ['Usuario o contraseña incorrectos', 'Credenciales inválidas'].includes(mensajeServidor);
+        const mensaje = credencialesInvalidas ? 'Contraseña incorrecta' : mensajeServidor;
         this.modal.error('No pudimos iniciar sesión', mensaje);
       },
     });

@@ -1,6 +1,16 @@
 import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { Component, computed, inject, input, linkedSignal, output, signal } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  input,
+  linkedSignal,
+  output,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { EstadoMeGusta, Publicacion } from '../../core/models/publicacion.model';
 import { AuthService, mensajeDeError } from '../../core/services/auth.service';
 import { ModalService } from '../../core/services/modal.service';
@@ -16,6 +26,7 @@ export class PostCard {
   protected readonly auth = inject(AuthService);
   private readonly publicaciones = inject(PublicacionesService);
   private readonly modal = inject(ModalService);
+  private readonly destroyRef = inject(DestroyRef);
 
   /** Publicación que muestra la tarjeta (la entrega el componente padre). */
   readonly publicacion = input.required<Publicacion>();
@@ -36,12 +47,17 @@ export class PostCard {
   /** Hay una operación en curso: evita clics repetidos sobre la misma tarjeta. */
   protected readonly ocupada = signal(false);
 
-  protected readonly inicial = computed(() => this.publicacion().autor.nombreUsuario.charAt(0).toUpperCase());
+  protected readonly inicial = computed(() =>
+    this.publicacion().autor.nombreUsuario.charAt(0).toUpperCase(),
+  );
 
   /** Solo el autor o un administrador ven el botón (el backend vuelve a verificar el permiso). */
   protected readonly puedeEliminar = computed(() => {
     const usuario = this.auth.usuario();
-    return !!usuario && (usuario.id === this.publicacion().autor.id || usuario.perfil === 'administrador');
+    return (
+      !!usuario &&
+      (usuario.id === this.publicacion().autor.id || usuario.perfil === 'administrador')
+    );
   });
 
   protected alternarMeGusta(): void {
@@ -49,8 +65,10 @@ export class PostCard {
     this.ocupada.set(true);
 
     const { id } = this.publicacion();
-    const peticion = this.estado().leGusta ? this.publicaciones.quitarMeGusta(id) : this.publicaciones.darMeGusta(id);
-    peticion.subscribe({
+    const peticion = this.estado().leGusta
+      ? this.publicaciones.quitarMeGusta(id)
+      : this.publicaciones.darMeGusta(id);
+    peticion.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (estado) => {
         this.estado.set(estado); // se muestra lo que confirmó el backend
         this.ocupada.set(false);
@@ -70,18 +88,21 @@ export class PostCard {
       `"${titulo}" dejará de estar disponible para todos. Esta acción no se puede deshacer.`,
       'Eliminar',
     );
-    if (!confirmado) return;
+    if (!confirmado || this.destroyRef.destroyed) return;
 
     this.ocupada.set(true);
-    this.publicaciones.eliminarPublicacion(id).subscribe({
-      next: () => {
-        this.ocupada.set(false);
-        this.eliminada.emit(id);
-      },
-      error: (err) => {
-        this.ocupada.set(false);
-        this.modal.error('No pudimos eliminar la publicación', mensajeDeError(err));
-      },
-    });
+    this.publicaciones
+      .eliminarPublicacion(id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.ocupada.set(false);
+          this.eliminada.emit(id);
+        },
+        error: (err) => {
+          this.ocupada.set(false);
+          this.modal.error('No pudimos eliminar la publicación', mensajeDeError(err));
+        },
+      });
   }
 }

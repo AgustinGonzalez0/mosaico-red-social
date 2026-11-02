@@ -5,6 +5,7 @@ import {
   HttpStatus,
   Post,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -12,6 +13,9 @@ import { imageFileFilter, MAX_IMAGE_BYTES } from '../common/imagen.js';
 import { AuthService } from './auth.service.js';
 import { LoginDto } from './dto/login.dto.js';
 import { RegistroDto } from './dto/registro.dto.js';
+import { JwtAuthGuard } from './jwt-auth.guard.js';
+import { UsuarioActual } from './usuario-actual.decorator.js';
+import type { UsuarioAutenticado } from './usuario-autenticado.js';
 
 @Controller('auth')
 export class AuthController {
@@ -24,7 +28,10 @@ export class AuthController {
       fileFilter: imageFileFilter,
     }),
   )
-  registro(@Body() dto: RegistroDto, @UploadedFile() imagen?: Express.Multer.File) {
+  registro(
+    @Body() dto: RegistroDto,
+    @UploadedFile() imagen?: Express.Multer.File,
+  ) {
     return this.auth.registro(dto, imagen); // 201 Created
   }
 
@@ -34,13 +41,17 @@ export class AuthController {
     return this.auth.login(dto);
   }
 
-  @Post('refresh')
+  @Post('autorizar')
   @HttpCode(HttpStatus.OK)
-  refresh(@Body('refreshToken') refreshToken: string) {
-    return this.auth.refrescar(refreshToken);
+  @UseGuards(JwtAuthGuard)
+  autorizar(@UsuarioActual() usuario: UsuarioAutenticado) {
+    return this.auth.autorizar(usuario);
   }
 
-  @Post('logout')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  logout() {}
+  @Post('refrescar')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  refrescar(@UsuarioActual() usuario: UsuarioAutenticado) {
+    return this.auth.refrescar(usuario);
+  }
 }

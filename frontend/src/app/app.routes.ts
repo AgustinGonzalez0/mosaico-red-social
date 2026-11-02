@@ -15,6 +15,7 @@ export const routes: Routes = [
     path: '',
     component: Shell,
     canActivate: [authGuard],
+    canActivateChild: [authGuard],
     children: [
       { path: 'publicaciones', component: Publicaciones, title: 'Publicaciones · Mosaico' },
       { path: 'mi-perfil', component: MiPerfil, title: 'Mi perfil · Mosaico' },

@@ -1,6 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { Publicacion } from '../../core/models/publicacion.model';
 import { Usuario } from '../../core/models/usuario.model';
@@ -21,6 +22,7 @@ describe('PostCard', () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        provideRouter([]),
         { provide: AuthService, useValue: authDePrueba(usuario) },
       ],
     });
@@ -94,7 +96,10 @@ describe('PostCard', () => {
       corazon().click();
       http
         .expectOne(`${API}/p1/me-gusta`)
-        .flush({ message: 'Ya le diste me gusta a esta publicación' }, { status: 409, statusText: 'Conflict' });
+        .flush(
+          { message: 'Ya le diste me gusta a esta publicación' },
+          { status: 409, statusText: 'Conflict' },
+        );
       fixture.detectChanges();
 
       expect(cantidad()).toBe('2');
@@ -113,7 +118,10 @@ describe('PostCard', () => {
       fixture.detectChanges();
       expect(cantidad()).toBe('3');
 
-      fixture.componentRef.setInput('publicacion', publicacionDePrueba({ meGusta: 10, leGusta: false }));
+      fixture.componentRef.setInput(
+        'publicacion',
+        publicacionDePrueba({ meGusta: 10, leGusta: false }),
+      );
       fixture.detectChanges();
       expect(cantidad()).toBe('10');
       expect(corazon().getAttribute('aria-pressed')).toBe('false');
@@ -180,10 +188,16 @@ describe('PostCard', () => {
       await fixture.whenStable();
       http
         .expectOne(`${API}/p1`)
-        .flush({ message: 'Solo podés eliminar tus propias publicaciones' }, { status: 403, statusText: 'Forbidden' });
+        .flush(
+          { message: 'Solo podés eliminar tus propias publicaciones' },
+          { status: 403, statusText: 'Forbidden' },
+        );
 
       expect(eliminadas).toEqual([]);
-      expect(modal.actual()).toMatchObject({ tipo: 'error', mensaje: 'Solo podés eliminar tus propias publicaciones' });
+      expect(modal.actual()).toMatchObject({
+        tipo: 'error',
+        mensaje: 'Solo podés eliminar tus propias publicaciones',
+      });
     });
   });
 });

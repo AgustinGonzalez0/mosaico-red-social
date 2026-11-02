@@ -54,10 +54,15 @@ export class PublicacionesService {
     return this.http.delete<EstadoMeGusta>(`${this.url}/${id}/me-gusta`);
   }
 
-  /** Solo lectura en el Sprint 2 (los comentarios se escriben recién en el Sprint 3). */
-  listarComentarios(publicacionId: string, limit = 5): Observable<Paginado<Comentario>> {
-    const params = new HttpParams().set('limit', limit);
-    return this.http.get<Paginado<Comentario>>(`${this.url}/${publicacionId}/comentarios`, { params });
+  listarComentarios(
+    publicacionId: string,
+    limit = 5,
+    offset = 0,
+  ): Observable<Paginado<Comentario>> {
+    const params = new HttpParams().set('limit', limit).set('offset', offset);
+    return this.http.get<Paginado<Comentario>>(`${this.url}/${publicacionId}/comentarios`, {
+      params,
+    });
   }
 
   obtenerPublicacion(id: string): Observable<Publicacion> {
@@ -68,7 +73,13 @@ export class PublicacionesService {
     return this.http.post<Comentario>(`${this.url}/${publicacionId}/comentarios`, { mensaje });
   }
 
-  editarComentario(publicacionId: string, comentarioId: string, mensaje: string): Observable<Comentario> {
-    return this.http.put<Comentario>(`${this.url}/${publicacionId}/comentarios/${comentarioId}`, { mensaje });
+  editarComentario(
+    publicacionId: string,
+    comentarioId: string,
+    mensaje: string,
+  ): Observable<Comentario> {
+    return this.http.put<Comentario>(`${this.url}/${publicacionId}/comentarios/${comentarioId}`, {
+      mensaje,
+    });
   }
 }

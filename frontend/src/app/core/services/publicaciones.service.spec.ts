@@ -1,6 +1,7 @@
 import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { authInterceptor } from '../interceptors/auth.interceptor';
 import { authDePrueba } from '../../testing/fixtures';
@@ -14,11 +15,14 @@ describe('PublicacionesService + authInterceptor', () => {
   let http: HttpTestingController;
 
   function configurar(token: string | null) {
+    const auth = authDePrueba(null, token);
+    vi.spyOn(auth, 'cerrarSesion');
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(withInterceptors([authInterceptor])),
         provideHttpClientTesting(),
-        { provide: AuthService, useValue: authDePrueba(null, token) },
+        provideRouter([]),
+        { provide: AuthService, useValue: auth },
       ],
     });
     servicio = TestBed.inject(PublicacionesService);
@@ -107,5 +111,55 @@ describe('PublicacionesService + authInterceptor', () => {
     const req = http.expectOne('https://otro-sitio.example.com/datos');
     expect(req.request.headers.has('Authorization')).toBe(false);
     req.flush({});
+  });
+
+  it('pagina comentarios por offset y limit sin cambiar el bloque predeterminado de Mi Perfil', () => {
+    configurar('abc');
+    servicio.listarComentarios('p1').subscribe();
+    const perfil = http.expectOne((r) => r.url === `${API}/p1/comentarios`);
+    expect(perfil.request.params.get('offset')).toBe('0');
+    expect(perfil.request.params.get('limit')).toBe('5');
+    perfil.flush({});
+    servicio.listarComentarios('p1', 5, 10).subscribe();
+    const detalle = http.expectOne((r) => r.url === `${API}/p1/comentarios`);
+    expect(detalle.request.params.get('offset')).toBe('10');
+    expect(detalle.request.params.get('limit')).toBe('5');
+    detalle.flush({});
+  });
+
+  it('un 401 protegido cierra sesión una vez y no renueva ni reintenta', () => {
+    configurar('abc');
+    servicio.listarPublicaciones().subscribe({ error: () => {} });
+    http.expectOne((r) => r.url === API).flush(null, { status: 401, statusText: 'Unauthorized' });
+    expect(TestBed.inject(AuthService).cerrarSesion).toHaveBeenCalledOnce();
+    http.expectNone((r) => r.url.startsWith(`${environment.apiUrl}/auth/`));
+  });
+
+  it.each(['login', 'registro', 'autorizar', 'refrescar'])(
+    'el 401 de /auth/%s se entrega al responsable sin redirigir',
+    (ruta) => {
+      configurar('abc');
+      TestBed.inject(HttpClient)
+        .post(`${environment.apiUrl}/auth/${ruta}`, {})
+        .subscribe({ error: () => {} });
+      const pedido = http.expectOne(`${environment.apiUrl}/auth/${ruta}`);
+      expect(pedido.request.headers.has('Authorization')).toBe(
+        ['autorizar', 'refrescar'].includes(ruta),
+      );
+      pedido.flush(null, { status: 401, statusText: 'Unauthorized' });
+      expect(TestBed.inject(AuthService).cerrarSesion).not.toHaveBeenCalled();
+    },
+  );
+
+  it('no filtra el token a un dominio que solo comparte el prefijo de la API', () => {
+    configurar('abc');
+    const url = `${environment.apiUrl}.otro.example/datos`;
+    TestBed.inject(HttpClient)
+      .get(url)
+      .subscribe({ error: () => {} });
+    const pedido = http.expectOne(url);
+    expect(pedido.request.headers.has('Authorization')).toBe(false);
+    pedido.flush(null, { status: 401, statusText: 'Unauthorized' });
+    expect(TestBed.inject(AuthService).cerrarSesion).not.toHaveBeenCalled();
   });
 });

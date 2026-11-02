@@ -1,6 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../../core/services/auth.service';
@@ -12,6 +13,7 @@ import {
   usuarioDePrueba,
 } from '../../testing/fixtures';
 import { MiPerfil } from './mi-perfil';
+import { PostCard } from '../../shared/post-card/post-card';
 
 const API = `${environment.apiUrl}/publicaciones`;
 
@@ -67,11 +69,21 @@ describe('MiPerfil', () => {
     crear();
     http.expectOne((r) => r.url === API).flush(posts(['p1', 'p2', 'p3'], 7));
 
-    http.expectOne((r) => r.url === `${API}/p1/comentarios`).flush(
-      paginadoDePrueba([comentarioDePrueba({ mensaje: 'Genial' }), comentarioDePrueba({ id: 'c2', mensaje: 'Linda', modificado: true })], { total: 2 }),
-    );
+    http
+      .expectOne((r) => r.url === `${API}/p1/comentarios`)
+      .flush(
+        paginadoDePrueba(
+          [
+            comentarioDePrueba({ mensaje: 'Genial' }),
+            comentarioDePrueba({ id: 'c2', mensaje: 'Linda', modificado: true }),
+          ],
+          { total: 2 },
+        ),
+      );
     http.expectOne((r) => r.url === `${API}/p2/comentarios`).flush(paginadoDePrueba([]));
-    http.expectOne((r) => r.url === `${API}/p3/comentarios`).flush(paginadoDePrueba([comentarioDePrueba()], { total: 9, hasMore: true }));
+    http
+      .expectOne((r) => r.url === `${API}/p3/comentarios`)
+      .flush(paginadoDePrueba([comentarioDePrueba()], { total: 9, hasMore: true }));
     fixture.detectChanges();
 
     expect(el().querySelectorAll('app-post-card')).toHaveLength(3);
@@ -95,8 +107,12 @@ describe('MiPerfil', () => {
   it('si fallan los comentarios de una publicación igual muestra el resto', () => {
     crear();
     http.expectOne((r) => r.url === API).flush(posts(['p1', 'p2']));
-    http.expectOne((r) => r.url === `${API}/p1/comentarios`).flush(null, { status: 500, statusText: 'Error' });
-    http.expectOne((r) => r.url === `${API}/p2/comentarios`).flush(paginadoDePrueba([comentarioDePrueba()]));
+    http
+      .expectOne((r) => r.url === `${API}/p1/comentarios`)
+      .flush(null, { status: 500, statusText: 'Error' });
+    http
+      .expectOne((r) => r.url === `${API}/p2/comentarios`)
+      .flush(paginadoDePrueba([comentarioDePrueba()]));
     fixture.detectChanges();
 
     expect(el().querySelectorAll('app-post-card')).toHaveLength(2);
@@ -107,7 +123,9 @@ describe('MiPerfil', () => {
 
   it('muestra el error y permite reintentar', () => {
     crear();
-    http.expectOne((r) => r.url === API).flush({ message: 'Tu sesión expiró' }, { status: 401, statusText: 'Unauthorized' });
+    http
+      .expectOne((r) => r.url === API)
+      .flush({ message: 'Tu sesión expiró' }, { status: 401, statusText: 'Unauthorized' });
     fixture.detectChanges();
     expect(el().querySelector('[role="alert"]')!.textContent).toContain('Tu sesión expiró');
 
@@ -121,5 +139,29 @@ describe('MiPerfil', () => {
     crear(false);
     expect(el().textContent).toContain('Todavía no iniciaste sesión');
     http.expectNone(API);
+  });
+
+  it('eliminar una publicación vuelve a pedir las últimas tres y actualiza el total', () => {
+    crear();
+    http.expectOne((r) => r.url === API).flush(posts(['p1']));
+    http.expectOne((r) => r.url === `${API}/p1/comentarios`).flush(paginadoDePrueba([]));
+    fixture.detectChanges();
+    const tarjeta = fixture.debugElement.query(By.directive(PostCard))
+      .componentInstance as PostCard;
+    tarjeta.eliminada.emit('p1');
+    const pedido = http.expectOne((r) => r.url === API);
+    expect(pedido.request.params.get('limit')).toBe('3');
+    pedido.flush(posts([]));
+    fixture.detectChanges();
+    expect(el().querySelectorAll('app-post-card')).toHaveLength(0);
+    expect(el().querySelector('.datos')!.textContent).toContain('0');
+  });
+
+  it('destruir el componente cancela las consultas de comentarios pendientes', () => {
+    crear();
+    http.expectOne((r) => r.url === API).flush(posts(['p1']));
+    const pedido = http.expectOne((r) => r.url === `${API}/p1/comentarios`);
+    fixture.destroy();
+    expect(pedido.cancelled).toBe(true);
   });
 });

@@ -12,7 +12,10 @@ import { subirImagen } from '../common/imagen.js';
 import { Paginado, paginado } from '../common/paginacion.js';
 import { User } from '../users/schemas/user.schema.js';
 import { CrearPublicacionDto } from './dto/crear-publicacion.dto.js';
-import { ListarPublicacionesDto, Orden } from './dto/listar-publicaciones.dto.js';
+import {
+  ListarPublicacionesDto,
+  Orden,
+} from './dto/listar-publicaciones.dto.js';
 import { Publicacion } from './schemas/publicacion.schema.js';
 
 /** Forma en que el frontend recibe una publicación. */
@@ -39,7 +42,8 @@ export interface EstadoMeGusta {
 @Injectable()
 export class PublicacionesService {
   constructor(
-    @InjectModel(Publicacion.name) private readonly publicaciones: Model<Publicacion>,
+    @InjectModel(Publicacion.name)
+    private readonly publicaciones: Model<Publicacion>,
     @InjectModel(User.name) private readonly usuarios: Model<User>,
   ) {}
 
@@ -61,7 +65,13 @@ export class PublicacionesService {
       alto: subida?.alto ?? null,
     });
 
-    const [respuesta] = await this.consultar({ _id: creada._id }, autor.id, 'fecha', 0, 1);
+    const [respuesta] = await this.consultar(
+      { _id: creada._id },
+      autor.id,
+      'fecha',
+      0,
+      1,
+    );
     return respuesta;
   }
 
@@ -82,8 +92,15 @@ export class PublicacionesService {
   }
 
   async obtener(id: string, usuarioId: string): Promise<PublicacionRespuesta> {
-    const [publicacion] = await this.consultar({ _id: id, activa: true }, usuarioId, 'fecha', 0, 1);
-    if (!publicacion) throw new NotFoundException('La publicación no existe o fue eliminada');
+    const [publicacion] = await this.consultar(
+      { _id: new Types.ObjectId(id), activa: true },
+      usuarioId,
+      'fecha',
+      0,
+      1,
+    );
+    if (!publicacion)
+      throw new NotFoundException('La publicación no existe o fue eliminada');
     return publicacion;
   }
 
@@ -92,14 +109,22 @@ export class PublicacionesService {
     const publicacion = await this.publicaciones
       .findOne({ _id: id, activa: true }, { autor: 1 })
       .lean();
-    if (!publicacion) throw new NotFoundException('La publicación no existe o ya fue eliminada');
+    if (!publicacion)
+      throw new NotFoundException(
+        'La publicación no existe o ya fue eliminada',
+      );
 
     const esAutor = publicacion.autor.toString() === usuario.id;
     if (!esAutor && usuario.perfil !== 'administrador') {
-      throw new ForbiddenException('Solo podés eliminar tus propias publicaciones');
+      throw new ForbiddenException(
+        'Solo podés eliminar tus propias publicaciones',
+      );
     }
 
-    await this.publicaciones.updateOne({ _id: id }, { $set: { activa: false } });
+    await this.publicaciones.updateOne(
+      { _id: id },
+      { $set: { activa: false } },
+    );
   }
 
   async darMeGusta(id: string, usuarioId: string): Promise<EstadoMeGusta> {
@@ -112,7 +137,11 @@ export class PublicacionesService {
       )
       .lean();
 
-    if (!actualizada) throw await this.errorDeEstado(id, 'Ya le diste me gusta a esta publicación');
+    if (!actualizada)
+      throw await this.errorDeEstado(
+        id,
+        'Ya le diste me gusta a esta publicación',
+      );
     return this.estado(actualizada.meGusta, usuarioId);
   }
 
@@ -128,7 +157,10 @@ export class PublicacionesService {
       .lean();
 
     if (!actualizada) {
-      throw await this.errorDeEstado(id, 'No le habías dado me gusta a esta publicación');
+      throw await this.errorDeEstado(
+        id,
+        'No le habías dado me gusta a esta publicación',
+      );
     }
     return this.estado(actualizada.meGusta, usuarioId);
   }
@@ -184,7 +216,9 @@ export class PublicacionesService {
             createdAt: 1,
             autor: {
               id: { $toString: '$autor' },
-              nombreUsuario: { $ifNull: ['$datosAutor.nombreUsuario', 'usuario eliminado'] },
+              nombreUsuario: {
+                $ifNull: ['$datosAutor.nombreUsuario', 'usuario eliminado'],
+              },
               imagenPerfil: { $ifNull: ['$datosAutor.imagenPerfil', null] },
             },
             meGusta: { $size: '$meGusta' },
@@ -203,7 +237,10 @@ export class PublicacionesService {
   }
 
   /** La operación no encontró nada que modificar: 404 si la publicación no existe, 409 si ya estaba en ese estado. */
-  private async errorDeEstado(id: string, conflicto: string): Promise<HttpException> {
+  private async errorDeEstado(
+    id: string,
+    conflicto: string,
+  ): Promise<HttpException> {
     const existe = await this.publicaciones.exists({ _id: id, activa: true });
     return existe
       ? new ConflictException(conflicto)

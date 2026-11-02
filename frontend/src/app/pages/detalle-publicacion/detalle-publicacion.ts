@@ -1,10 +1,14 @@
 import { DatePipe } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { Comentario, Publicacion } from '../../core/models/publicacion.model';
+import { Comentario, MENSAJE_MAX, Publicacion } from '../../core/models/publicacion.model';
 import { AuthService, mensajeDeError } from '../../core/services/auth.service';
 import { PublicacionesService } from '../../core/services/publicaciones.service';
+import { textoNoVacio } from '../../core/validators';
+
+const POR_BLOQUE = 5;
 
 @Component({
   selector: 'app-detalle-publicacion',
@@ -15,76 +19,138 @@ import { PublicacionesService } from '../../core/services/publicaciones.service'
 export class DetallePublicacion implements OnInit {
   private readonly ruta = inject(ActivatedRoute);
   private readonly servicio = inject(PublicacionesService);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(FormBuilder).nonNullable;
   protected readonly auth = inject(AuthService);
+
   protected readonly publicacion = signal<Publicacion | null>(null);
-  protected readonly comentarios = signal<Comentario[]>([]);
   protected readonly cargando = signal(true);
   protected readonly error = signal<string | null>(null);
+  protected readonly comentarios = signal<Comentario[]>([]);
+  protected readonly cargandoComentarios = signal(false);
+  protected readonly hasMoreComentarios = signal(true);
+  protected readonly offsetComentarios = signal(0);
+  protected readonly totalComentarios = signal(0);
+  protected readonly errorComentarios = signal<string | null>(null);
+  protected readonly errorFormulario = signal<string | null>(null);
   protected readonly guardando = signal(false);
   protected readonly editando = signal<string | null>(null);
+  protected readonly limiteMensaje = MENSAJE_MAX;
   protected readonly formulario = this.fb.group({
-    mensaje: ['', [Validators.required, Validators.maxLength(500)]],
+    mensaje: ['', [Validators.required, textoNoVacio, Validators.maxLength(MENSAJE_MAX)]],
   });
+
   ngOnInit(): void {
+    this.obtenerPublicacion();
+  }
+
+  protected obtenerPublicacion(): void {
     const id = this.ruta.snapshot.paramMap.get('id');
+    this.cargando.set(true);
+    this.error.set(null);
     if (!id) {
-      this.mostrarError('No se encontró la publicación');
+      this.error.set('No se encontró la publicación');
+      this.cargando.set(false);
       return;
     }
-    this.servicio.obtenerPublicacion(id).subscribe({
-      next: (p) => {
-        this.publicacion.set(p);
-        this.cargarComentarios(id);
-      },
-      error: (e) => this.mostrarError(mensajeDeError(e)),
-    });
+    this.servicio
+      .obtenerPublicacion(id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (publicacion) => {
+          this.publicacion.set(publicacion);
+          this.cargando.set(false);
+          this.cargarComentarios();
+        },
+        error: (error) => {
+          this.error.set(mensajeDeError(error));
+          this.cargando.set(false);
+        },
+      });
   }
-  private cargarComentarios(id: string): void {
-    this.servicio.listarComentarios(id, 50).subscribe({
-      next: (r) => {
-        this.comentarios.set(r.data);
-        this.cargando.set(false);
-      },
-      error: (e) => this.mostrarError(mensajeDeError(e)),
-    });
+
+  protected cargarComentarios(): void {
+    const publicacion = this.publicacion();
+    if (!publicacion || this.cargandoComentarios() || this.guardando()) return;
+    this.cargandoComentarios.set(true);
+    this.errorComentarios.set(null);
+    this.servicio
+      .listarComentarios(publicacion.id, POR_BLOQUE, this.offsetComentarios())
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (respuesta) => {
+          const ids = new Set(this.comentarios().map((comentario) => comentario.id));
+          const nuevos = respuesta.data.filter((comentario) => {
+            if (ids.has(comentario.id)) return false;
+            ids.add(comentario.id);
+            return true;
+          });
+          this.comentarios.update((lista) => [...lista, ...nuevos]);
+          this.offsetComentarios.set(respuesta.offset + respuesta.data.length);
+          this.totalComentarios.set(respuesta.total);
+          this.hasMoreComentarios.set(respuesta.hasMore);
+          this.cargandoComentarios.set(false);
+        },
+        error: (error) => {
+          this.errorComentarios.set(mensajeDeError(error));
+          this.cargandoComentarios.set(false);
+        },
+      });
   }
+
+  protected cargarMasComentarios(): void {
+    if (this.hasMoreComentarios()) this.cargarComentarios();
+  }
+
   protected guardarComentario(): void {
-    const p = this.publicacion();
-    if (this.formulario.invalid || this.guardando() || !p) return;
-    const id = this.editando();
-    const mensaje = this.formulario.controls.mensaje.value;
-    const pedido = id
-      ? this.servicio.editarComentario(p.id, id, mensaje)
-      : this.servicio.crearComentario(p.id, mensaje);
+    this.formulario.markAllAsTouched();
+    const publicacion = this.publicacion();
+    if (this.formulario.invalid || this.guardando() || this.cargandoComentarios() || !publicacion)
+      return;
+    const comentarioId = this.editando();
+    const mensaje = this.formulario.controls.mensaje.value.trim();
+    const pedido = comentarioId
+      ? this.servicio.editarComentario(publicacion.id, comentarioId, mensaje)
+      : this.servicio.crearComentario(publicacion.id, mensaje);
     this.guardando.set(true);
-    pedido.subscribe({
-      next: (c) => {
-        this.comentarios.update((lista) =>
-          id ? lista.map((actual) => (actual.id === c.id ? c : actual)) : [c, ...lista],
-        );
-        this.cancelarEdicion();
+    this.errorFormulario.set(null);
+    pedido.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (comentario) => {
+        if (comentarioId) {
+          this.comentarios.update((lista) =>
+            lista.map((actual) => (actual.id === comentario.id ? comentario : actual)),
+          );
+        } else {
+          this.comentarios.update((lista) => [comentario, ...lista]);
+          // La inserción desplaza una posición los siguientes bloques del servidor.
+          this.offsetComentarios.update((offset) => offset + 1);
+          this.totalComentarios.update((total) => total + 1);
+        }
         this.guardando.set(false);
+        this.cancelarEdicion();
       },
-      error: (e) => {
-        this.mostrarError(mensajeDeError(e));
+      error: (error) => {
+        this.errorFormulario.set(mensajeDeError(error));
         this.guardando.set(false);
       },
     });
   }
-  protected editarComentario(c: Comentario): void {
-    this.editando.set(c.id);
-    this.formulario.setValue({ mensaje: c.mensaje });
+
+  protected editarComentario(comentario: Comentario): void {
+    if (!this.esAutor(comentario) || this.guardando()) return;
+    this.editando.set(comentario.id);
+    this.errorFormulario.set(null);
+    this.formulario.setValue({ mensaje: comentario.mensaje });
   }
+
   protected cancelarEdicion(): void {
+    if (this.guardando()) return;
     this.editando.set(null);
+    this.errorFormulario.set(null);
     this.formulario.reset();
   }
-  protected esAutor(c: Comentario): boolean {
-    return c.autor.id === this.auth.usuario()?.id;
-  }
-  private mostrarError(mensaje: string): void {
-    this.error.set(mensaje);
-    this.cargando.set(false);
+
+  protected esAutor(comentario: Comentario): boolean {
+    return comentario.autor.id === this.auth.usuario()?.id;
   }
 }

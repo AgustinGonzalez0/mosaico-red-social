@@ -56,6 +56,15 @@ export function authDePrueba(usuario: Usuario | null, token: string | null = 'to
     usuario: signal(usuario),
     token: signal(token),
     autenticado: signal(usuario !== null),
+    tokenVigente: () => !!token,
+    logout: () => {},
+    cerrarSesion: () => {},
     urlImagen: (ruta: string | null | undefined) => ruta ?? null,
   };
+}
+
+/** JWT sintético para probar el reloj del cliente; la firma se verifica en los e2e del backend. */
+export function tokenDePrueba(emitido = Date.now(), duracionMinutos = 15): string {
+  const iat = Math.floor(emitido / 1000);
+  return `cabecera.${btoa(JSON.stringify({ sub: 'u1', tipo: 'acceso', iat, exp: iat + duracionMinutos * 60 }))}.firma`;
 }
