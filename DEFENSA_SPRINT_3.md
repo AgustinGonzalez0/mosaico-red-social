@@ -12,7 +12,7 @@ Revisión del 2 de noviembre de 2026 sobre `main`, partiendo de `f76a83b7d753780
 | Crear o editar un comentario no mantenía correctamente el estado de la pantalla. | Crear inserta al principio e incrementa el offset en uno, porque el nuevo registro desplaza los siguientes resultados del servidor. Editar reemplaza únicamente ese ID y mantiene la posición y fecha. Los cambios se aplican al recibir confirmación. |
 | Se podía editar un comentario de una publicación eliminada. | `editar()` reutiliza `verificarPublicacion()` antes de modificar. La consulta también exige que el comentario pertenezca a esa publicación y que el usuario sea su autor. |
 | La autenticación usaba un refresh token de siete días y renovación automática ante 401. | Se eliminó ese contrato. `/auth/autorizar` y `/auth/refrescar` reutilizan `JwtAuthGuard`. Solo se emiten JWT de acceso de quince minutos; el guard rechaza otros tipos, firma inválida, vencimiento, identidad inválida y cuenta deshabilitada. |
-| La carga inicial solo confiaba en la fecha del JWT local. | Ahora muestra spinner y llama al servidor. Hasta esa respuesta `autenticado` es falso y no se renderiza el outlet. Un 401 limpia la sesión y navega al login; los errores de red muestran Reintentar. |
+| La carga inicial solo confiaba en la fecha del JWT local. | Ahora muestra spinner y llama al servidor. Hasta esa respuesta `autenticado` es falso y no se renderiza el outlet. Un 401 limpia la sesión; el guard envía las rutas privadas al login y las públicas siguen accesibles. Los errores de red muestran Reintentar. |
 | Faltaba el aviso de los diez minutos. | AuthService controla un solo temporizador: calcula el aviso como `exp - 5 minutos` y luego programa la expiración real. El modal reutiliza ModalService y ofrece Extender sesión/Ahora no. |
 | El interceptor refrescaba y repetía automáticamente solicitudes. | Adjunta el JWT solo a la API propia. Un 401 protegido cierra sesión y redirige; login, registro, autorizar y refrescar gestionan sus propios errores. No hay repetición automática. |
 | Todos los 401 del login se mostraban como contraseña incorrecta. | Solo se traducen los mensajes de credenciales inválidas; se conserva el mensaje de cuenta deshabilitada, red y demás errores. |
@@ -26,8 +26,9 @@ Las líneas corresponden a los archivos finales formateados de esta entrega. Los
 
 | Funcionalidad | Método | Archivo | Línea exacta | Qué explicarle al profesor |
 |---|---|---|---:|---|
-| Inicializar el arranque | `ngOnInit()` | `frontend/src/app/app.ts` | 62 | Sin parámetros; llama una vez a validarSesion para iniciar la autorización. |
-| Pantalla de carga y autorización inicial | `validarSesion()` | `frontend/src/app/app.ts` | 66 | Lee la sesión, llama a AuthService.autorizar y actualiza spinner/error o navega según la respuesta. |
+| Inicializar el arranque | `ngOnInit()` | `frontend/src/app/app.ts` | 65 | Conserva la URL inicial con consulta y fragmento; llama una vez a validarSesion para iniciar la autorización. |
+| Pantalla de carga y autorización inicial | `validarSesion()` | `frontend/src/app/app.ts` | 70 | Si hay token lo autoriza con el backend; si falta o se rechaza limpia la sesión. Después abre la ruta inicial con el guard vigente. |
+| Abrir el destino inicial | `abrirRutaInicial()` | `frontend/src/app/app.ts` | 98 | Conserva el destino solicitado; solo cambia raíz/login/registro al listado si la sesión fue autorizada. Realiza una única navegación con replaceUrl. |
 | Inicializar el detalle | `ngOnInit()` | `frontend/src/app/pages/detalle-publicacion/detalle-publicacion.ts` | 43 | Sin parámetros; inicia obtenerPublicacion cuando el componente está listo. |
 | Cargar el detalle | `obtenerPublicacion()` | `frontend/src/app/pages/detalle-publicacion/detalle-publicacion.ts` | 47 | Toma el ID de la ruta; usa el servicio HTTP, actualiza la publicación y luego carga comentarios. |
 | HTTP del detalle | `obtenerPublicacion(id)` | `frontend/src/app/core/services/publicaciones.service.ts` | 68 | Recibe un ID y devuelve un Observable con la respuesta de GET /publicaciones/:id. |
@@ -81,7 +82,7 @@ Las líneas corresponden a los archivos finales formateados de esta entrega. Los
 | Comprobación | Resultado final |
 |---|---|
 | Frontend: `npm.cmd run build` | Correcto, build de producción sin warnings. |
-| Frontend: `npm.cmd test -- --watch=false` | 10 archivos de pruebas, **92 pruebas aprobadas**. |
+| Frontend: `npm.cmd test -- --watch=false` | 10 archivos de pruebas, **110 pruebas aprobadas** tras la corrección final de navegación. |
 | Backend: `npm.cmd run build` | Correcto. |
 | Backend: `npm.cmd test` | 3 archivos, **44 pruebas unitarias aprobadas**. |
 | Backend: `npm.cmd run test:e2e` | 2 archivos, **72 pruebas e2e aprobadas** contra MongoDB en memoria. |
@@ -147,6 +148,7 @@ Frontend:
 - `frontend/src/app/app.ts`
 - `frontend/src/app/app.spec.ts`
 - `frontend/src/app/app.routes.ts`
+- `frontend/src/app/app.config.ts` (corrección final de navegación)
 - `frontend/src/app/core/guards/auth.guard.ts`
 - `frontend/src/app/core/guards/auth.guard.spec.ts` (nuevo)
 - `frontend/src/app/core/interceptors/auth.interceptor.ts`
@@ -189,10 +191,26 @@ Documentación: `README.md` y este informe. No se agregaron dependencias de ejec
 
 **¿Qué pasa si rechaza extender?** El token no cambia y el aviso no se repite para ese token. Al llegar a exp se limpian la sesión y el temporizador y se vuelve al login.
 
-**¿Qué ocurre si el backend devuelve 401?** Si es una petición protegida, el interceptor cierra sesión y redirige al login sin repetirla. Login, registro, autorización inicial y extensión manejan sus mensajes específicos.
+**¿Qué ocurre si el backend devuelve 401?** Si es una petición protegida, el interceptor cierra sesión y redirige al login sin repetirla. Login, registro, autorización inicial y extensión manejan sus mensajes específicos. En el arranque se limpia el token rechazado y se conserva el acceso a las rutas públicas; el guard bloquea las privadas.
 
 **¿Qué sucede si falla Cargar más o guardar un comentario?** Conservamos los datos ya visibles y el texto del formulario. Solo actualizamos la lista cuando el servidor confirma y el usuario puede reintentar.
 
 ## Pendientes y límites
 
 No quedaron fallos de build, tests o lint conocidos. Queda pendiente únicamente la revisión visual manual del detalle en escritorio y móvil porque el acceso al navegador no se autorizó a tiempo. No se desplegó ni se modificó ningún servicio externo.
+
+## Corrección final de navegación sobre 6bdd4fa
+
+Se corrigieron dos causas concretas: el éxito de autorizar siempre navegaba a `/publicaciones`, perdiendo los enlaces directos; sin token se llamaba a cerrarSesion, forzando `/login` incluso al abrir `/registro`.
+
+Ahora `ngOnInit` conserva la URL inicial mediante `Location.path(true)`. `withDisabledInitialNavigation()` en `frontend/src/app/app.config.ts`, línea 20, evita que el Router inicie otra navegación mientras se autoriza la sesión. Al resolverla, `abrirRutaInicial()` realiza la primera navegación con `navigateByUrl` y `replaceUrl: true`. Los parámetros y fragmentos de las rutas solicitadas se conservan. Si la sesión es válida, raíz/login/registro se dirigen al listado; sin sesión o con token rechazado, las páginas públicas quedan accesibles y authGuard envía las privadas al login. No se utiliza ningún parámetro de retorno externo.
+
+Archivos modificados en esta corrección: `frontend/src/app/app.ts`, `frontend/src/app/app.config.ts`, `frontend/src/app/app.spec.ts` y este informe. AuthService, guards, interceptor, backend, comentarios, temporizador y componentes de las páginas conservaron su implementación.
+
+La suite de arranque, en `frontend/src/app/app.spec.ts`, línea 22, contiene **23 casos con el Router real, las rutas, guards y componentes reales**. Solo se simulan la ubicación del navegador y HTTP. Se comprueban las URLs finales y el contenido renderizado para login/registro sin token, rutas privadas sin token, raíz y enlaces directos con token válido, query y fragmento, JWT inválido/vencido, acceso público después de un 401, reintento de red, guard después del arranque y ausencia de navegaciones duplicadas. Antes de autorizar se exige spinner, ninguna navegación completada y ninguna solicitud de publicaciones.
+
+Verificación final de esta corrección: frontend **110/110**, backend unitario **44/44**, backend e2e **72/72**, ambos builds correctos y `git diff --check` correcto. No se agregaron dependencias ni se hicieron commits, push o Pull Requests.
+
+**¿Qué sucede cuando se inicia la aplicación?** La aplicación conserva la URL solicitada, muestra el spinner y comprueba si existe un token. Si existe, lo valida contra el backend. Después abre esa ruta: las privadas requieren una sesión autorizada y las públicas permanecen accesibles sin ella.
+
+**¿Por qué necesitamos un guard?** Porque evita entrar a las rutas privadas sin una sesión autorizada, tanto al arrancar como en las navegaciones posteriores. El backend realiza la validación real del JWT.

@@ -1,88 +1,217 @@
-import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { Location } from '@angular/common';
+import { provideLocationMocks } from '@angular/common/testing';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Router, provideRouter } from '@angular/router';
+import { NavigationEnd, Router } from '@angular/router';
+import { Subscription, filter, firstValueFrom, take } from 'rxjs';
 import { environment } from '../environments/environment';
-import { authInterceptor } from './core/interceptors/auth.interceptor';
+import { appConfig } from './app.config';
 import { AuthService } from './core/services/auth.service';
-import { tokenDePrueba, usuarioDePrueba } from './testing/fixtures';
+import {
+  paginadoDePrueba,
+  publicacionDePrueba,
+  tokenDePrueba,
+  usuarioDePrueba,
+} from './testing/fixtures';
 import { App } from './app';
 
-describe('Arranque de Mosaico', () => {
+const API = environment.apiUrl;
+const ID = '64b7f0f0f0f0f0f0f0f0f0f0';
+const DETALLE = `/publicaciones/${ID}`;
+
+describe('Arranque y navegación de Mosaico con el Router real', () => {
   let fixture: ComponentFixture<App>;
   let http: HttpTestingController;
-  let navegar: ReturnType<typeof vi.spyOn>;
+  let router: Router;
+  let ubicacion: Location;
+  let navegacionInicial: Promise<NavigationEnd>;
+  let eventos: Subscription;
+  let destinos: string[];
 
   beforeEach(() => {
     localStorage.clear();
     TestBed.configureTestingModule({
-      providers: [
-        provideHttpClient(withInterceptors([authInterceptor])),
-        provideHttpClientTesting(),
-        provideRouter([]),
-      ],
+      providers: [...appConfig.providers, provideHttpClientTesting(), provideLocationMocks()],
     });
     http = TestBed.inject(HttpTestingController);
-    navegar = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    router = TestBed.inject(Router);
+    ubicacion = TestBed.inject(Location);
+    destinos = [];
+    eventos = router.events.subscribe((evento) => {
+      if (evento instanceof NavigationEnd) destinos.push(evento.urlAfterRedirects);
+    });
   });
+
   afterEach(() => {
     fixture.destroy();
+    eventos.unsubscribe();
     TestBed.inject(AuthService).logout();
     http.verify();
     localStorage.clear();
   });
 
-  function abrir(token: string | null) {
+  function abrir(url: string, token: string | null = null): void {
+    ubicacion.go(url);
     if (token)
       localStorage.setItem('mosaico.sesion', JSON.stringify({ usuario: usuarioDePrueba(), token }));
+    navegacionInicial = firstValueFrom(
+      router.events.pipe(
+        filter((evento): evento is NavigationEnd => evento instanceof NavigationEnd),
+        take(1),
+      ),
+    );
     fixture = TestBed.createComponent(App);
     fixture.detectChanges();
   }
 
-  it('sin token limpia la sesión y envía al login', () => {
-    abrir(null);
-    expect(navegar).toHaveBeenCalledWith(['/login']);
-    http.expectNone(`${environment.apiUrl}/auth/autorizar`);
-  });
-
-  it('muestra un spinner y oculta las rutas hasta autorizar contra el backend', () => {
-    abrir(tokenDePrueba());
-    const elemento = fixture.nativeElement as HTMLElement;
-    expect(elemento.querySelector('.spinner')).not.toBeNull();
-    expect(elemento.querySelector('router-outlet')).toBeNull();
-    expect(TestBed.inject(AuthService).autenticado()).toBe(false);
-    const pedido = http.expectOne(`${environment.apiUrl}/auth/autorizar`);
-    expect(pedido.request.method).toBe('POST');
-    pedido.flush(usuarioDePrueba({ nombre: 'Actualizado' }));
+  async function completarNavegacion(): Promise<void> {
+    await navegacionInicial;
     fixture.detectChanges();
-    expect(elemento.querySelector('.spinner')).toBeNull();
-    expect(TestBed.inject(AuthService).usuario()?.nombre).toBe('Actualizado');
-    expect(navegar).toHaveBeenCalledWith(['/publicaciones']);
-  });
+    // Se renderizan los componentes y guards reales; solo se simula la frontera HTTP.
+    for (const pedido of http.match((r) => r.url === `${API}/publicaciones`)) {
+      pedido.flush(paginadoDePrueba([]));
+    }
+    for (const pedido of http.match(`${API}${DETALLE}`)) {
+      pedido.flush(publicacionDePrueba({ id: ID }));
+    }
+    for (const pedido of http.match((r) => r.url === `${API}${DETALLE}/comentarios`)) {
+      pedido.flush(paginadoDePrueba([]));
+    }
+    fixture.detectChanges();
+  }
 
-  it.each(['token-invalido', tokenDePrueba(Date.now() - 16 * 60_000)])(
-    'un token rechazado se elimina sin intentar refresh',
-    (token) => {
-      abrir(token);
-      http
-        .expectOne(`${environment.apiUrl}/auth/autorizar`)
-        .flush(null, { status: 401, statusText: 'Unauthorized' });
-      fixture.detectChanges();
-      expect(TestBed.inject(AuthService).token()).toBeNull();
-      expect(navegar).toHaveBeenCalledWith(['/login']);
-      http.expectNone(`${environment.apiUrl}/auth/refrescar`);
+  async function autorizar(): Promise<void> {
+    const pedido = http.expectOne(`${API}/auth/autorizar`);
+    expect(pedido.request.method).toBe('POST');
+    expect(pedido.request.headers.get('Authorization')).toBe(
+      `Bearer ${TestBed.inject(AuthService).token()}`,
+    );
+    pedido.flush(usuarioDePrueba({ nombre: 'Actualizado' }));
+    await completarNavegacion();
+  }
+
+  it.each([
+    ['/', '/login', 'app-login'],
+    ['/login', '/login', 'app-login'],
+    ['/registro', '/registro', 'app-registro'],
+    ['/registro?invitacion=mosaico', '/registro?invitacion=mosaico', 'app-registro'],
+    ['/publicaciones', '/login', 'app-login'],
+    [DETALLE, '/login', 'app-login'],
+    ['/mi-perfil', '/login', 'app-login'],
+  ])(
+    'sin token: %s termina en %s sin consultar autorizar',
+    async (solicitada, esperada, selector) => {
+      abrir(solicitada);
+      await completarNavegacion();
+      expect(router.url).toBe(esperada);
+      expect(ubicacion.path()).toBe(esperada);
+      expect(fixture.nativeElement.querySelector(selector)).not.toBeNull();
+      expect(fixture.nativeElement.querySelector('app-shell')).toBeNull();
+      expect(destinos).toEqual([esperada]);
+      http.expectNone(`${API}/auth/autorizar`);
     },
   );
 
-  it('un error de red permite reintentar conservando el token sin mostrar rutas protegidas', () => {
-    abrir(tokenDePrueba());
-    http.expectOne(`${environment.apiUrl}/auth/autorizar`).error(new ProgressEvent('error'));
+  it.each([
+    ['/', '/publicaciones', 'app-publicaciones'],
+    ['?origen=inicio#bienvenida', '/publicaciones', 'app-publicaciones'],
+    ['/login', '/publicaciones', 'app-publicaciones'],
+    ['/registro', '/publicaciones', 'app-publicaciones'],
+    ['/publicaciones', '/publicaciones', 'app-publicaciones'],
+    [DETALLE, DETALLE, 'app-detalle-publicacion'],
+    ['/mi-perfil', '/mi-perfil', 'app-mi-perfil'],
+    [
+      `${DETALLE}?origen=perfil&etiqueta=arte#comentarios`,
+      `${DETALLE}?origen=perfil&etiqueta=arte#comentarios`,
+      'app-detalle-publicacion',
+    ],
+    ['/publicaciones?orden=meGusta', '/publicaciones?orden=meGusta', 'app-publicaciones'],
+  ])(
+    'con token válido: %s termina en %s conservando el destino',
+    async (solicitada, esperada, selector) => {
+      abrir(solicitada, tokenDePrueba());
+      const elemento = fixture.nativeElement as HTMLElement;
+      expect(elemento.querySelector('.spinner')).not.toBeNull();
+      expect(elemento.querySelector('router-outlet')).toBeNull();
+      expect(elemento.querySelector('app-shell')).toBeNull();
+      expect(TestBed.inject(AuthService).autenticado()).toBe(false);
+      expect(router.navigated).toBe(false);
+      expect(destinos).toEqual([]);
+      http.expectNone((r) => r.url.startsWith(`${API}/publicaciones`));
+      await autorizar();
+      expect(router.url).toBe(esperada);
+      expect(ubicacion.path(true)).toBe(esperada);
+      expect(elemento.querySelector(selector)).not.toBeNull();
+      expect(elemento.querySelector('.spinner')).toBeNull();
+      expect(TestBed.inject(AuthService).usuario()?.nombre).toBe('Actualizado');
+      expect(destinos).toEqual([esperada]);
+    },
+  );
+
+  it.each(['token-invalido', tokenDePrueba(Date.now() - 16 * 60_000)])(
+    'un token rechazado al abrir el detalle se elimina y termina en login sin renovar',
+    async (token) => {
+      abrir(DETALLE, token);
+      http
+        .expectOne(`${API}/auth/autorizar`)
+        .flush(null, { status: 401, statusText: 'Unauthorized' });
+      await completarNavegacion();
+      expect(TestBed.inject(AuthService).token()).toBeNull();
+      expect(router.url).toBe('/login');
+      expect(fixture.nativeElement.querySelector('app-login')).not.toBeNull();
+      expect(fixture.nativeElement.querySelector('app-detalle-publicacion')).toBeNull();
+      expect(destinos).toEqual(['/login']);
+      http.expectNone(`${API}/auth/refrescar`);
+    },
+  );
+
+  it.each(['/login', '/registro'])(
+    'un token rechazado mantiene accesible la página pública %s',
+    async (url) => {
+      abrir(url, 'token-invalido');
+      http
+        .expectOne(`${API}/auth/autorizar`)
+        .flush(null, { status: 401, statusText: 'Unauthorized' });
+      await completarNavegacion();
+      expect(router.url).toBe(url);
+      expect(TestBed.inject(AuthService).token()).toBeNull();
+      expect(destinos).toEqual([url]);
+    },
+  );
+
+  it('un error de red conserva el destino y permite reintentar sin navegar ni mostrar contenido protegido', async () => {
+    const destino = `${DETALLE}?origen=perfil#comentarios`;
+    abrir(destino, tokenDePrueba());
+    http.expectOne(`${API}/auth/autorizar`).error(new ProgressEvent('error'));
     fixture.detectChanges();
     const elemento = fixture.nativeElement as HTMLElement;
     expect(elemento.querySelector('[role="alert"]')!.textContent).toContain('No se pudo conectar');
     expect(elemento.querySelector('router-outlet')).toBeNull();
+    expect(ubicacion.path(true)).toBe(destino);
+    expect(destinos).toEqual([]);
     elemento.querySelector<HTMLButtonElement>('button')!.click();
-    http.expectOne(`${environment.apiUrl}/auth/autorizar`).flush(usuarioDePrueba());
-    expect(navegar).toHaveBeenCalledWith(['/publicaciones']);
+    fixture.detectChanges();
+    expect(elemento.querySelector('.spinner')).not.toBeNull();
+    await autorizar();
+    expect(router.url).toBe(destino);
+    expect(destinos).toEqual([destino]);
+  });
+
+  it('la navegación posterior sigue protegida por authGuard sin volver a autorizar el arranque', async () => {
+    abrir('/registro');
+    await completarNavegacion();
+    await router.navigateByUrl('/mi-perfil');
+    fixture.detectChanges();
+    expect(router.url).toBe('/login');
+    expect(fixture.nativeElement.querySelector('app-mi-perfil')).toBeNull();
+    expect(destinos).toEqual(['/registro', '/login']);
+    http.expectNone(`${API}/auth/autorizar`);
+  });
+
+  it('ignora parámetros de retorno externos y solo navega dentro de las rutas de la aplicación', async () => {
+    abrir('/login?returnUrl=https%3A%2F%2Fejemplo.com', tokenDePrueba());
+    await autorizar();
+    expect(router.url).toBe('/publicaciones');
+    expect(destinos).toEqual(['/publicaciones']);
   });
 });

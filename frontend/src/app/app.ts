@@ -1,3 +1,4 @@
+import { Location } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -56,10 +57,13 @@ export class App implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly ubicacion = inject(Location);
+  private destinoInicial = '/';
   protected readonly cargando = signal(true);
   protected readonly error = signal<string | null>(null);
 
   ngOnInit(): void {
+    this.destinoInicial = this.ubicacion.path(true) || '/';
     this.validarSesion();
   }
 
@@ -67,8 +71,8 @@ export class App implements OnInit {
     this.error.set(null);
     this.cargando.set(true);
     if (!this.auth.token()) {
-      this.auth.cerrarSesion();
-      this.cargando.set(false);
+      this.auth.logout();
+      this.abrirRutaInicial();
       return;
     }
     this.auth
@@ -76,14 +80,28 @@ export class App implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
-          this.cargando.set(false);
-          void this.router.navigate(['/publicaciones']);
+          this.abrirRutaInicial();
         },
         error: (error) => {
-          this.cargando.set(false);
-          if (error instanceof HttpErrorResponse && error.status === 401) this.auth.cerrarSesion();
-          else this.error.set(mensajeDeError(error));
+          if (error instanceof HttpErrorResponse && error.status === 401) {
+            this.auth.logout();
+            this.abrirRutaInicial();
+          } else {
+            this.cargando.set(false);
+            this.error.set(mensajeDeError(error));
+          }
         },
       });
+  }
+
+  /** La primera navegación se realiza después de resolver la sesión; el guard protege el destino. */
+  private abrirRutaInicial(): void {
+    const ruta = this.destinoInicial.split(/[?#]/)[0] || '/';
+    const destino =
+      this.auth.autenticado() && ['/', '/login', '/registro'].includes(ruta)
+        ? '/publicaciones'
+        : this.destinoInicial;
+    this.cargando.set(false);
+    void this.router.navigateByUrl(destino, { replaceUrl: true });
   }
 }
