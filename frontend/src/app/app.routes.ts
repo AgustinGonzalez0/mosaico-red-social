@@ -4,6 +4,8 @@ import { Login } from './pages/login/login';
 import { MiPerfil } from './pages/mi-perfil/mi-perfil';
 import { Publicaciones } from './pages/publicaciones/publicaciones';
 import { Registro } from './pages/registro/registro';
+import { DetallePublicacion } from './pages/detalle-publicacion/detalle-publicacion';
+import { authGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'login' },
@@ -12,9 +14,11 @@ export const routes: Routes = [
   {
     path: '',
     component: Shell,
+    canActivate: [authGuard],
     children: [
       { path: 'publicaciones', component: Publicaciones, title: 'Publicaciones · Mosaico' },
       { path: 'mi-perfil', component: MiPerfil, title: 'Mi perfil · Mosaico' },
+      { path: 'publicaciones/:id', component: DetallePublicacion, title: 'Detalle' },
     ],
   },
   { path: '**', redirectTo: 'login' },

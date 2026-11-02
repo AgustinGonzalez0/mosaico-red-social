@@ -10,7 +10,7 @@
     />
   }
   <div class="cuerpo">
-    <h3>{{ publicacion().titulo }}</h3>
+    <h3><a [routerLink]="['/publicaciones', publicacion().id]">{{ publicacion().titulo }}</a></h3>
     <p>{{ publicacion().mensaje }}</p>
     <div class="pie">
       <div class="autor">

@@ -1,0 +1,33 @@
+.volver {
+  display: inline-block;
+  margin-bottom: 1rem;
+}
+.detalle,
+.comentarios {
+  background: white;
+  border-radius: 1rem;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+.detalle img {
+  max-width: 100%;
+  max-height: 32rem;
+  object-fit: contain;
+}
+textarea {
+  display: block;
+  width: 100%;
+  min-height: 6rem;
+  margin: 0.5rem 0;
+}
+.comentarios li {
+  list-style: none;
+  border-top: 1px solid #eee;
+  padding: 0.75rem 0;
+}
+.comentarios ul {
+  padding: 0;
+}
+.error {
+  color: #b42318;
+}

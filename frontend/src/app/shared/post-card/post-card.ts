@@ -1,4 +1,5 @@
 import { DatePipe } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { Component, computed, inject, input, linkedSignal, output, signal } from '@angular/core';
 import { EstadoMeGusta, Publicacion } from '../../core/models/publicacion.model';
 import { AuthService, mensajeDeError } from '../../core/services/auth.service';
@@ -7,7 +8,7 @@ import { PublicacionesService } from '../../core/services/publicaciones.service'
 
 @Component({
   selector: 'app-post-card',
-  imports: [DatePipe],
+  imports: [DatePipe, RouterLink],
   templateUrl: './post-card.html',
   styleUrl: './post-card.scss',
 })

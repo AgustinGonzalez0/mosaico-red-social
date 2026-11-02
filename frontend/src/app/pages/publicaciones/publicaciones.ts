@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { EMPTY, Subscription, catchError } from 'rxjs';
@@ -31,24 +31,21 @@ export class Publicaciones implements OnInit {
 
   protected readonly ordenes = ORDENES;
   protected readonly orden = signal<OrdenPublicaciones>('fecha');
-  protected readonly pagina = signal(1);
-
   protected readonly publicaciones = signal<Publicacion[]>([]);
-  protected readonly total = signal(0);
+  protected readonly hasMore = signal(true);
   protected readonly cargando = signal(true);
   protected readonly error = signal<{ mensaje: string; sesion: boolean } | null>(null);
   protected readonly creando = signal(false);
 
-  protected readonly totalPaginas = computed(() => Math.max(1, Math.ceil(this.total() / POR_PAGINA)));
   protected readonly esqueletos = Array.from({ length: 8 }, (_, i) => i);
 
   ngOnInit(): void {
-    this.cargarPublicaciones(this.orden(), this.pagina());
+    this.cargarPublicaciones(this.orden(), false);
   }
 
-  protected cargarPublicaciones(orden: OrdenPublicaciones, pagina: number): void {
+  protected cargarPublicaciones(orden: OrdenPublicaciones, agregar: boolean): void {
     const numeroSolicitud = ++this.numeroSolicitud;
-    const offset = (pagina - 1) * POR_PAGINA;
+    const offset = agregar ? this.publicaciones().length : 0;
 
     this.solicitud?.unsubscribe();
     this.cargando.set(true);
@@ -72,14 +69,8 @@ export class Publicaciones implements OnInit {
       .subscribe((respuesta) => {
         if (numeroSolicitud !== this.numeroSolicitud) return;
 
-        this.total.set(respuesta.total);
-        const ultimaPagina = Math.max(1, Math.ceil(respuesta.total / POR_PAGINA));
-        if (respuesta.data.length === 0 && respuesta.total > 0 && pagina > ultimaPagina) {
-          this.pagina.set(ultimaPagina);
-          this.cargarPublicaciones(orden, ultimaPagina);
-          return;
-        }
-        this.publicaciones.set(respuesta.data);
+        this.hasMore.set(respuesta.hasMore);
+        this.publicaciones.update((lista) => agregar ? [...lista, ...respuesta.data] : respuesta.data);
         this.cargando.set(false);
       });
   }
@@ -87,30 +78,25 @@ export class Publicaciones implements OnInit {
   protected cambiarOrden(orden: OrdenPublicaciones): void {
     if (orden === this.orden()) return;
     this.orden.set(orden);
-    this.pagina.set(1);
-    this.cargarPublicaciones(orden, 1);
-  }
-
-  protected irAPagina(pagina: number): void {
-    if (pagina < 1 || pagina > this.totalPaginas() || pagina === this.pagina()) return;
-    this.pagina.set(pagina);
-    this.cargarPublicaciones(this.orden(), pagina);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    this.cargarPublicaciones(orden, false);
   }
 
   protected reintentar(): void {
-    this.cargarPublicaciones(this.orden(), this.pagina());
+    this.cargarPublicaciones(this.orden(), false);
+  }
+
+  protected cargarMas(): void {
+    if (!this.cargando() && this.hasMore()) this.cargarPublicaciones(this.orden(), true);
   }
 
   protected alCrear(): void {
     this.creando.set(false);
     this.orden.set('fecha');
-    this.pagina.set(1);
-    this.cargarPublicaciones('fecha', 1);
+    this.cargarPublicaciones('fecha', false);
   }
 
   protected alEliminar(id: string): void {
     this.publicaciones.update((lista) => lista.filter((p) => p.id !== id));
-    this.cargarPublicaciones(this.orden(), this.pagina());
+    this.cargarPublicaciones(this.orden(), false);
   }
 }

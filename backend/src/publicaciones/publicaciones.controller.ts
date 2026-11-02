@@ -48,6 +48,11 @@ export class PublicacionesController {
     return this.publicaciones.listar(query, usuario.id); // 200 OK
   }
 
+  @Get(':id')
+  obtener(@Param('id', ParseObjectIdPipe) id: string, @UsuarioActual() usuario: UsuarioAutenticado) {
+    return this.publicaciones.obtener(id, usuario.id);
+  }
+
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   eliminar(

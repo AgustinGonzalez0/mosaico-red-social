@@ -81,6 +81,12 @@ export class PublicacionesService {
     return paginado(data, total, query.offset, query.limit);
   }
 
+  async obtener(id: string, usuarioId: string): Promise<PublicacionRespuesta> {
+    const [publicacion] = await this.consultar({ _id: id, activa: true }, usuarioId, 'fecha', 0, 1);
+    if (!publicacion) throw new NotFoundException('La publicación no existe o fue eliminada');
+    return publicacion;
+  }
+
   /** Baja lógica: la publicación queda con activa=false. Solo su autor o un administrador. */
   async eliminar(id: string, usuario: UsuarioAutenticado): Promise<void> {
     const publicacion = await this.publicaciones

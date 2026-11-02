@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { EMPTY, Subject, catchError, forkJoin, map, of, switchMap } from 'rxjs';
@@ -17,7 +17,7 @@ const ULTIMAS = 3;
   templateUrl: './mi-perfil.html',
   styleUrl: './mi-perfil.scss',
 })
-export class MiPerfil {
+export class MiPerfil implements OnInit {
   protected readonly auth = inject(AuthService);
   private readonly servicio = inject(PublicacionesService);
 
@@ -40,7 +40,7 @@ export class MiPerfil {
   /** Cada pedido nuevo cancela el anterior que siga en curso (switchMap). */
   private readonly pedir$ = new Subject<void>();
 
-  constructor() {
+  ngOnInit(): void {
     this.pedir$
       .pipe(
         switchMap(() => {

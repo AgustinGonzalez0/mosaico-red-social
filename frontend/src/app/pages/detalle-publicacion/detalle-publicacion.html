@@ -1,0 +1,42 @@
+<a routerLink="/publicaciones" class="volver">← Volver a publicaciones</a>
+@if (cargando()) {
+  <p aria-busy="true">Cargando publicación…</p>
+} @else if (error(); as mensaje) {
+  <p class="error" role="alert">{{ mensaje }}</p>
+} @else if (publicacion(); as p) {
+  <article class="detalle">
+    @if (auth.urlImagen(p.imagen); as imagen) {
+      <img [src]="imagen" [alt]="p.titulo" />
+    }
+    <h1>{{ p.titulo }}</h1>
+    <p>{{ p.mensaje }}</p>
+    <small>{{ p.autor.nombreUsuario }} · {{ p.createdAt | date: 'd MMM y' }}</small>
+  </article>
+  <section class="comentarios">
+    <h2>Comentarios ({{ comentarios().length }})</h2>
+    <form [formGroup]="formulario" (ngSubmit)="guardarComentario()">
+      <label for="mensaje">{{ editando() ? 'Editar comentario' : 'Nuevo comentario' }}</label
+      ><textarea id="mensaje" formControlName="mensaje" maxlength="500"></textarea
+      ><button type="submit" class="btn primary" [disabled]="guardando()">Guardar</button>
+      @if (editando()) {
+        <button type="button" class="btn" (click)="cancelarEdicion()">Cancelar</button>
+      }
+    </form>
+    <ul>
+      @for (c of comentarios(); track c.id) {
+        <li>
+          <strong>{{ c.autor.nombreUsuario }}</strong>
+          @if (c.modificado) {
+            <em>(editado)</em>
+          }
+          <p>{{ c.mensaje }}</p>
+          @if (esAutor(c)) {
+            <button type="button" class="btn" (click)="editarComentario(c)">Editar</button>
+          }
+        </li>
+      } @empty {
+        <li>Todavía no hay comentarios.</li>
+      }
+    </ul>
+  </section>
+}

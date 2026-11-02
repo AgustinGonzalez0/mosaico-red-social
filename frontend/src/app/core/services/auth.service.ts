@@ -1,6 +1,6 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { Observable, tap } from 'rxjs';
+import { Observable, finalize, shareReplay, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Sesion } from '../models/usuario.model';
 
@@ -10,6 +10,7 @@ const STORAGE_KEY = 'mosaico.sesion';
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly sesion = signal<Sesion | null>(this.leerSesion());
+  private refrescando$: Observable<Sesion> | null = null;
 
   readonly usuario = computed(() => this.sesion()?.usuario ?? null);
   readonly token = computed(() => this.sesion()?.token ?? null);
@@ -28,12 +29,41 @@ export class AuthService {
   }
 
   logout(): void {
+    const refreshToken = this.sesion()?.refreshToken;
     this.sesion.set(null);
     try {
       localStorage.removeItem(STORAGE_KEY);
     } catch {
       /* almacenamiento no disponible */
     }
+    if (refreshToken) this.http.post<void>(`${environment.apiUrl}/auth/logout`, { refreshToken }).subscribe();
+  }
+
+  tokenVigente(): boolean {
+    const token = this.token();
+    if (!token) return false;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1])) as { exp?: number };
+      return !!payload.exp && payload.exp * 1000 > Date.now();
+    } catch {
+      return false;
+    }
+  }
+
+  refrescar(): Observable<Sesion> {
+    if (!this.sesion()?.refreshToken) {
+      throw new Error('No hay refresh token');
+    }
+    if (!this.refrescando$) {
+      this.refrescando$ = this.http
+        .post<Sesion>(`${environment.apiUrl}/auth/refresh`, { refreshToken: this.sesion()?.refreshToken })
+        .pipe(
+          tap((sesion) => this.guardarSesion(sesion)),
+          finalize(() => (this.refrescando$ = null)),
+          shareReplay(1),
+        );
+    }
+    return this.refrescando$;
   }
 
   /** URL absoluta de una imagen servida por el backend (o null si no hay). */

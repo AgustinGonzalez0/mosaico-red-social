@@ -12,6 +12,9 @@ import { UsersService } from '../users/users.service.js';
 import { LoginDto } from './dto/login.dto.js';
 import { RegistroDto } from './dto/registro.dto.js';
 
+const ACCESS_TOKEN_MINUTOS = '15m';
+const REFRESH_TOKEN_DIAS = '7d';
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -57,13 +60,31 @@ export class AuthService {
     return this.respuesta(user);
   }
 
+  async refrescar(refreshToken: string) {
+    let payload: { sub: string; tipo?: string };
+    try {
+      payload = await this.jwt.verifyAsync(refreshToken);
+    } catch {
+      throw new UnauthorizedException('El refresh token no es válido o expiró');
+    }
+    if (payload.tipo !== 'refresh') throw new UnauthorizedException('Refresh token inválido');
+
+    const user = await this.users.findById(payload.sub);
+    if (!user || !user.habilitado) throw new UnauthorizedException('La cuenta no está habilitada');
+    return this.respuesta(user);
+  }
+
   private async respuesta(user: UserDocument) {
-    const token = await this.jwt.signAsync({
+    const datosToken = {
       sub: user._id.toString(),
       correo: user.correo,
       nombreUsuario: user.nombreUsuario,
       perfil: user.perfil,
-    });
-    return { usuario: this.users.toPublic(user), token };
+    };
+    const [token, refreshToken] = await Promise.all([
+      this.jwt.signAsync(datosToken, { expiresIn: ACCESS_TOKEN_MINUTOS }),
+      this.jwt.signAsync({ sub: datosToken.sub, tipo: 'refresh' }, { expiresIn: REFRESH_TOKEN_DIAS }),
+    ]);
+    return { usuario: this.users.toPublic(user), token, refreshToken };
   }
 }

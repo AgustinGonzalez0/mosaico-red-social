@@ -47,20 +47,9 @@
       }
     </div>
 
-    @if (totalPaginas() > 1) {
+    @if (hasMore()) {
       <nav class="paginacion" aria-label="Paginación">
-        <button type="button" class="btn" [disabled]="pagina() === 1 || cargando()" (click)="irAPagina(pagina() - 1)">
-          ← Anterior
-        </button>
-        <span>Página {{ pagina() }} de {{ totalPaginas() }}</span>
-        <button
-          type="button"
-          class="btn"
-          [disabled]="pagina() === totalPaginas() || cargando()"
-          (click)="irAPagina(pagina() + 1)"
-        >
-          Siguiente →
-        </button>
+        <button type="button" class="btn" [disabled]="cargando()" (click)="cargarMas()">Cargar más</button>
       </nav>
     }
   } @else {

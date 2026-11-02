@@ -59,4 +59,16 @@ export class PublicacionesService {
     const params = new HttpParams().set('limit', limit);
     return this.http.get<Paginado<Comentario>>(`${this.url}/${publicacionId}/comentarios`, { params });
   }
+
+  obtenerPublicacion(id: string): Observable<Publicacion> {
+    return this.http.get<Publicacion>(`${this.url}/${id}`);
+  }
+
+  crearComentario(publicacionId: string, mensaje: string): Observable<Comentario> {
+    return this.http.post<Comentario>(`${this.url}/${publicacionId}/comentarios`, { mensaje });
+  }
+
+  editarComentario(publicacionId: string, comentarioId: string, mensaje: string): Observable<Comentario> {
+    return this.http.put<Comentario>(`${this.url}/${publicacionId}/comentarios/${comentarioId}`, { mensaje });
+  }
 }
