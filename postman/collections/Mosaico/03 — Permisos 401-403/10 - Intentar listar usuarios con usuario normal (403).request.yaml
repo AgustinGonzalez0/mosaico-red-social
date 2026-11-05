@@ -1,0 +1,14 @@
+$kind: http-request
+description: Debe responder 403 y no mostrar listado privado.
+url: https://mosaico-api-oejm.onrender.com/usuarios?offset=0&limit=10
+method: GET
+headers:
+  Authorization: Bearer {{usuarioToken}}
+queryParams:
+  offset: "0"
+  limit: "10"
+scripts:
+  - type: afterResponse
+    code: 'pm.test("Usuario normal no es administrador: 403", () => pm.response.to.have.status(403));'
+    language: text/javascript
+order: 1000

@@ -1,0 +1,13 @@
+$kind: http-request
+url: https://mosaico-api-oejm.onrender.com/estadisticas/comentarios-por-fecha?desde={{fechaDesde}}&hasta={{fechaHasta}}
+method: GET
+headers:
+  Authorization: Bearer {{adminToken}}
+queryParams:
+  desde: "{{fechaDesde}}"
+  hasta: "{{fechaHasta}}"
+scripts:
+  - type: afterResponse
+    code: 'pm.test("Comentarios por fecha: 200", () => pm.response.to.have.status(200));'
+    language: text/javascript
+order: 2000

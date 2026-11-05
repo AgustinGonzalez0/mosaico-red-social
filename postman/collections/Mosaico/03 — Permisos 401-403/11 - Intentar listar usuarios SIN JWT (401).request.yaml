@@ -1,0 +1,14 @@
+$kind: http-request
+description: Debe responder 401. Request Auth = No Auth; no envía Authorization.
+url: https://mosaico-api-oejm.onrender.com/usuarios?offset=0&limit=10
+method: GET
+queryParams:
+  offset: "0"
+  limit: "10"
+auth:
+  type: noauth
+scripts:
+  - type: afterResponse
+    code: 'pm.test("Sin token: 401", () => pm.response.to.have.status(401));'
+    language: text/javascript
+order: 2000

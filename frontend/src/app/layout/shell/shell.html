@@ -7,7 +7,10 @@
   <nav class="enlaces" aria-label="Principal">
     <a routerLink="/publicaciones" routerLinkActive="activo">Inicio</a>
     <a routerLink="/mi-perfil" routerLinkActive="activo">Mi perfil</a>
-    <span *appSoloAdmin class="admin-links"><a routerLink="/dashboard/usuarios" routerLinkActive="activo">Administración</a><a routerLink="/dashboard/estadisticas" routerLinkActive="activo">Estadísticas</a></span>
+    <span *appSoloAdmin class="admin-links">
+      <a routerLink="/dashboard/usuarios" routerLinkActive="activo">Administración</a>
+      <a routerLink="/dashboard/estadisticas" routerLinkActive="activo">Estadísticas</a>
+    </span>
   </nav>
 
   <div class="acciones">

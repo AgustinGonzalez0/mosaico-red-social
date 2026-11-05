@@ -1,0 +1,14 @@
+$kind: http-request
+description: Devuelve data, total, offset, limit y hasMore con usuarios reales.
+url: https://mosaico-api-oejm.onrender.com/usuarios?offset=0&limit=10
+method: GET
+headers:
+  Authorization: Bearer {{adminToken}}
+queryParams:
+  offset: "0"
+  limit: "10"
+scripts:
+  - type: afterResponse
+    code: 'pm.test("Listar usuarios: 200", () => pm.response.to.have.status(200));'
+    language: text/javascript
+order: 1000

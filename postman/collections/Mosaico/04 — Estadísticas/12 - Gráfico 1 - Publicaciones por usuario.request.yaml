@@ -1,0 +1,13 @@
+$kind: http-request
+url: https://mosaico-api-oejm.onrender.com/estadisticas/publicaciones-por-usuario?desde={{fechaDesde}}&hasta={{fechaHasta}}
+method: GET
+headers:
+  Authorization: Bearer {{adminToken}}
+queryParams:
+  desde: "{{fechaDesde}}"
+  hasta: "{{fechaHasta}}"
+scripts:
+  - type: afterResponse
+    code: 'pm.test("Publicaciones por usuario: 200", () => pm.response.to.have.status(200));'
+    language: text/javascript
+order: 1000

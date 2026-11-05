@@ -1,0 +1,26 @@
+$kind: http-request
+description: "ÚNICA CONFIGURACIÓN OBLIGATORIA: en Body reemplazá ESCRIBI_TU_USUARIO_ADMIN y ESCRIBI_TU_CONTRASENA por las credenciales reales de tu cuenta administradora. Al pulsar Send se guarda el JWT automáticamente en adminToken. Nunca compartas ni exportes credenciales/tokens reales."
+url: https://mosaico-api-oejm.onrender.com/auth/login
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "usuario": "pedrohenrique@gmail.com",
+      "password": "Agustin102020"
+    }
+auth:
+  type: noauth
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Login de administrador: 200", () => pm.response.to.have.status(200));
+      if (pm.response.code === 200) {
+        const respuesta = pm.response.json();
+        pm.collectionVariables.set('adminToken', respuesta.token);
+        console.log('Token del administrador guardado automáticamente.');
+      }
+    language: text/javascript
+order: 1000

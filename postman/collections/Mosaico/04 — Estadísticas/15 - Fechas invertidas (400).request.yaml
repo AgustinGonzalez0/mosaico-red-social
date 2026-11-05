@@ -1,0 +1,13 @@
+$kind: http-request
+url: https://mosaico-api-oejm.onrender.com/estadisticas/comentarios-por-fecha?desde=2026-11-10&hasta=2026-11-01
+method: GET
+headers:
+  Authorization: Bearer {{adminToken}}
+queryParams:
+  desde: 2026-11-10
+  hasta: 2026-11-01
+scripts:
+  - type: afterResponse
+    code: 'pm.test("Rango inválido: 400", () => pm.response.to.have.status(400));'
+    language: text/javascript
+order: 4000

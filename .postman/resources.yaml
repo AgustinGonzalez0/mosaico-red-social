@@ -2,6 +2,12 @@
 workspace:
   id: 1674911d-42ea-49cb-80ed-7b5a7e7d242c
 
+# Each entry here maps a local resource to one or more corresponding objects in Postman Cloud
+
+cloudResources:
+  collections:
+    ../postman/collections/Mosaico: d566c1b2-1a86-43eb-8d4f-6c09e89d718c
+
 # All resources in the `postman/` folder are automatically registered in Local View.
 # Point to additional files outside the `postman/` folder to register them individually. Example:
 #localResources:

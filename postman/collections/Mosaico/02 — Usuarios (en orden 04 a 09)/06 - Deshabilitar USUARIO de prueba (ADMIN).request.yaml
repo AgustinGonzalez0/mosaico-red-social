@@ -1,0 +1,11 @@
+$kind: http-request
+description: Ejecutar después de la petición 05. Solo deshabilita la cuenta de prueba que acabás de crear.
+url: https://mosaico-api-oejm.onrender.com/usuarios/{{demoUserId}}
+method: DELETE
+headers:
+  Authorization: Bearer {{adminToken}}
+scripts:
+  - type: afterResponse
+    code: 'pm.test("Baja lógica de usuario: 204", () => pm.response.to.have.status(204));'
+    language: text/javascript
+order: 3000

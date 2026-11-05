@@ -1,0 +1,14 @@
+$kind: http-request
+description: Solo para ejecutar después de 18.
+url: https://mosaico-api-oejm.onrender.com/publicaciones/{{publicacionPruebaId}}/comentarios?offset=0&limit=5
+method: GET
+headers:
+  Authorization: Bearer {{adminToken}}
+queryParams:
+  offset: "0"
+  limit: "5"
+scripts:
+  - type: afterResponse
+    code: 'pm.test("Comentarios de publicación inactiva: 404", () => pm.response.to.have.status(404));'
+    language: text/javascript
+order: 4000

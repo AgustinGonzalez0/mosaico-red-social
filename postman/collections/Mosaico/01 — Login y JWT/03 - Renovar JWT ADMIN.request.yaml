@@ -1,0 +1,15 @@
+$kind: http-request
+description: Renueva el JWT por 15 minutos adicionales. Guarda automáticamente el nuevo token. Requiere un token todavía vigente.
+url: https://mosaico-api-oejm.onrender.com/auth/refrescar
+method: POST
+headers:
+  Authorization: Bearer {{adminToken}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Renovar token: 200", () => pm.response.to.have.status(200));
+      if (pm.response.code === 200) {
+        pm.collectionVariables.set('adminToken', pm.response.json().token);
+      }
+    language: text/javascript
+order: 3000

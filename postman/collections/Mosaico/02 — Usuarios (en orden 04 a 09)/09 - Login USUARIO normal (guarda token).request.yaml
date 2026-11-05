@@ -1,0 +1,22 @@
+$kind: http-request
+description: Ejecutar después de 08. Guarda usuarioToken para probar 403 sin tener que copiar JWT.
+url: https://mosaico-api-oejm.onrender.com/auth/login
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "usuario": "{{demoUsuario}}",
+      "password": "Prueba123!"
+    }
+auth:
+  type: noauth
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Login normal: 200", () => pm.response.to.have.status(200));
+      if (pm.response.code === 200) pm.collectionVariables.set('usuarioToken', pm.response.json().token);
+    language: text/javascript
+order: 6000

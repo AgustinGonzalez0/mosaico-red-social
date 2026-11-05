@@ -1,0 +1,53 @@
+$kind: http-request
+description: "No tenés que escribir ni correo, ni nombre de usuario ni ID: se generan y guardan solos. Crea una CUENTA REAL en la base configurada: hacé la prueba solo si está permitido y evitá usuarios ficticios innecesarios en producción."
+url: https://mosaico-api-oejm.onrender.com/usuarios
+method: POST
+headers:
+  Authorization: Bearer {{adminToken}}
+body:
+  type: formdata
+  content:
+    - type: text
+      key: nombre
+      value: Juan
+    - type: text
+      key: apellido
+      value: Prueba
+    - type: text
+      key: correo
+      value: "{{demoCorreo}}"
+    - type: text
+      key: nombreUsuario
+      value: "{{demoUsuario}}"
+    - type: text
+      key: password
+      value: Prueba123!
+    - type: text
+      key: repetirPassword
+      value: Prueba123!
+    - type: text
+      key: fechaNacimiento
+      value: 2000-01-01
+    - type: text
+      key: descripcion
+      value: Cuenta temporal para defensa Sprint 4
+    - type: text
+      key: perfil
+      value: usuario
+scripts:
+  - type: beforeRequest
+    code: |-
+      const codigo = Date.now().toString().slice(-10);
+      pm.collectionVariables.set('demoUsuario', 'prueba' + codigo);
+      pm.collectionVariables.set('demoCorreo', 'prueba' + codigo + '@example.com');
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test("Crear usuario: 201", () => pm.response.to.have.status(201));
+      if (pm.response.code === 201) {
+        const usuario = pm.response.json();
+        pm.collectionVariables.set('demoUserId', usuario.id);
+        console.log('Usuario creado. ID guardado:', usuario.id);
+      }
+    language: text/javascript
+order: 2000

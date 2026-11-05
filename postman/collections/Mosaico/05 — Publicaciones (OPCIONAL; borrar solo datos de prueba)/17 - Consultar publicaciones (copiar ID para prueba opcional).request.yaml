@@ -1,0 +1,15 @@
+$kind: http-request
+description: Listá publicaciones y elegí conscientemente una publicación creada exclusivamente para pruebas. Pegá su ID en la variable publicacionPruebaId antes de ejecutar 18 y 19.
+url: https://mosaico-api-oejm.onrender.com/publicaciones?orden=fecha&offset=0&limit=12
+method: GET
+headers:
+  Authorization: Bearer {{adminToken}}
+queryParams:
+  orden: fecha
+  offset: "0"
+  limit: "12"
+scripts:
+  - type: afterResponse
+    code: 'pm.test("Listado de publicaciones: 200", () => pm.response.to.have.status(200));'
+    language: text/javascript
+order: 1000

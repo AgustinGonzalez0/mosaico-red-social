@@ -1,0 +1,11 @@
+$kind: collection
+description: Colección real de endpoints del commit 1296e98. URL de producción configurada. Solo editar usuario y contraseña en 01 - Login ADMIN. Los tokens y el ID del usuario de prueba se guardan solos. Los DELETE modifican datos reales. JWT vence en 15 minutos.
+variables:
+  adminToken: ""
+  usuarioToken: ""
+  demoUserId: ""
+  demoUsuario: ""
+  demoCorreo: ""
+  fechaDesde: 2026-11-01
+  fechaHasta: 2026-11-05
+  publicacionPruebaId: ""
