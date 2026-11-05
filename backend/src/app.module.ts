@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module.js';
 import { UPLOADS_DIR } from './common/imagen.js';
 import { PublicacionesModule } from './publicaciones/publicaciones.module.js';
 import { UsersModule } from './users/users.module.js';
+import { UsersController } from './users/users.controller.js';
 
 @Module({
   imports: [
@@ -19,5 +20,6 @@ import { UsersModule } from './users/users.module.js';
     UsersModule,
     PublicacionesModule,
   ],
+  controllers: [UsersController],
 })
 export class AppModule {}

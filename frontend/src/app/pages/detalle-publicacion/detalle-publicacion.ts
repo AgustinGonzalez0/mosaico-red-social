@@ -2,10 +2,11 @@ import { DatePipe } from '@angular/common';
 import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Comentario, MENSAJE_MAX, Publicacion } from '../../core/models/publicacion.model';
 import { AuthService, mensajeDeError } from '../../core/services/auth.service';
 import { PublicacionesService } from '../../core/services/publicaciones.service';
+import { ModalService } from '../../core/services/modal.service';
 import { textoNoVacio } from '../../core/validators';
 
 const POR_BLOQUE = 5;
@@ -22,6 +23,8 @@ export class DetallePublicacion implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(FormBuilder).nonNullable;
   protected readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
+  private readonly modal = inject(ModalService);
 
   protected readonly publicacion = signal<Publicacion | null>(null);
   protected readonly cargando = signal(true);
@@ -153,4 +156,7 @@ export class DetallePublicacion implements OnInit {
   protected esAutor(comentario: Comentario): boolean {
     return comentario.autor.id === this.auth.usuario()?.id;
   }
+
+  protected puedeEliminar(): boolean { const usuario = this.auth.usuario(); const publicacion = this.publicacion(); return !!usuario && !!publicacion && (usuario.perfil === 'administrador' || usuario.id === publicacion.autor.id); }
+  protected async eliminarPublicacion(): Promise<void> { const publicacion = this.publicacion(); if (!publicacion || !this.puedeEliminar()) return; if (!(await this.modal.confirmar('Eliminar publicación', 'La publicación dejará de estar disponible para todos.', 'Eliminar'))) return; this.servicio.eliminarPublicacion(publicacion.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({ next: () => void this.router.navigate(['/publicaciones']), error: (e) => void this.modal.error('No se pudo eliminar', mensajeDeError(e)) }); }
 }

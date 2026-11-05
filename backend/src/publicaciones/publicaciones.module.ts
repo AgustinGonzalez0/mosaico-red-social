@@ -9,6 +9,8 @@ import { PublicacionesController } from './publicaciones.controller.js';
 import { PublicacionesService } from './publicaciones.service.js';
 import { Comentario, ComentarioSchema } from './schemas/comentario.schema.js';
 import { Publicacion, PublicacionSchema } from './schemas/publicacion.schema.js';
+import { EstadisticasController } from './estadisticas.controller.js';
+import { EstadisticasService } from './estadisticas.service.js';
 
 @Module({
   imports: [
@@ -20,7 +22,7 @@ import { Publicacion, PublicacionSchema } from './schemas/publicacion.schema.js'
     AuthModule, // JwtService para el JwtAuthGuard
     UsersModule, // UsersService para el JwtAuthGuard
   ],
-  controllers: [PublicacionesController, ComentariosController],
-  providers: [PublicacionesService, ComentariosService],
+  controllers: [PublicacionesController, ComentariosController, EstadisticasController],
+  providers: [PublicacionesService, ComentariosService, EstadisticasService],
 })
 export class PublicacionesModule {}

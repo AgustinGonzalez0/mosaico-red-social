@@ -4,6 +4,8 @@ import { JwtModule } from '@nestjs/jwt';
 import { UsersModule } from '../users/users.module.js';
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
+import { JwtAuthGuard } from './jwt-auth.guard.js';
+import { AdminGuard } from './admin.guard.js';
 
 @Module({
   imports: [
@@ -17,8 +19,8 @@ import { AuthService } from './auth.service.js';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService],
+  providers: [AuthService, JwtAuthGuard, AdminGuard],
   // Se exporta JwtModule para que otros módulos puedan usar el JwtAuthGuard (necesita JwtService).
-  exports: [JwtModule],
+  exports: [JwtModule, JwtAuthGuard, AdminGuard],
 })
 export class AuthModule {}

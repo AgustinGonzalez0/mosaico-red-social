@@ -1,0 +1,17 @@
+{
+  "info": { "name": "Mosaico · Sprint 4 administración", "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json" },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "token", "value": "REEMPLAZAR_CON_TOKEN_DE_PRUEBA" },
+    { "key": "usuarioId", "value": "ID_DE_USUARIO" }
+  ],
+  "item": [
+    { "name": "GET usuarios", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/usuarios?offset=0&limit=10" } },
+    { "name": "POST usuario", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "body": { "mode": "formdata", "formdata": [{ "key": "nombre", "value": "Ana" }, { "key": "apellido", "value": "Prueba" }, { "key": "correo", "value": "ana.prueba@example.test" }, { "key": "nombreUsuario", "value": "ana.prueba" }, { "key": "password", "value": "Prueba123!" }, { "key": "repetirPassword", "value": "Prueba123!" }, { "key": "fechaNacimiento", "value": "2000-01-01" }, { "key": "descripcion", "value": "Cuenta de prueba" }, { "key": "perfil", "value": "usuario" }] }, "url": "{{baseUrl}}/usuarios" } },
+    { "name": "DELETE usuario", "request": { "method": "DELETE", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/usuarios/{{usuarioId}}" } },
+    { "name": "POST habilitar usuario", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/usuarios/{{usuarioId}}/habilitar" } },
+    { "name": "Estadísticas", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/estadisticas/publicaciones-por-usuario?desde=2026-10-01&hasta=2026-10-31" } },
+    { "name": "403 usuario común", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer TOKEN_DE_USUARIO_COMUN" }], "url": "{{baseUrl}}/usuarios" } },
+    { "name": "401 sin token", "request": { "method": "GET", "url": "{{baseUrl}}/usuarios" } }
+  ]
+}
