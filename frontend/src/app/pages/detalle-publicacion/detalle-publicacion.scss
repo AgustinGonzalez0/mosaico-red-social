@@ -7,6 +7,7 @@
   margin-bottom: 24px;
 }
 .detalle {
+  background: #fff;
   border-radius: 24px;
   overflow: hidden;
   box-shadow: var(--shadow);
@@ -53,8 +54,13 @@ time {
   color: var(--red);
   font-weight: 600;
 }
+/* Paneles blancos para que el texto se lea sobre el fondo decorativo. */
 .comentarios {
   margin-top: 32px;
+  padding: 24px 28px;
+  border-radius: 28px;
+  background: rgb(255 255 255 / 0.94);
+  box-shadow: var(--shadow);
 }
 .cuenta {
   font-size: 16px;
@@ -95,6 +101,8 @@ form {
 }
 .estado {
   padding: 40px 20px;
+  border-radius: 28px;
+  background: rgb(255 255 255 / 0.94);
   text-align: center;
 }
 .sin {
@@ -108,6 +116,9 @@ form {
 @media (max-width: 600px) {
   .texto {
     padding: 20px;
+  }
+  .comentarios {
+    padding: 18px;
   }
   .autor {
     gap: 8px;

@@ -1,11 +1,12 @@
 import { Component, computed, inject } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { MosaicoFondo } from '../../shared/mosaico-fondo/mosaico-fondo';
 import { SoloAdminDirective } from '../../shared/directives/solo-admin.directive';
 
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, SoloAdminDirective],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, SoloAdminDirective, MosaicoFondo],
   templateUrl: './shell.html',
   styleUrl: './shell.scss',
 })

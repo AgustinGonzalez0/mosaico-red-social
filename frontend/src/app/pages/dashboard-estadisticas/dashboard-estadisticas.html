@@ -1,6 +1,8 @@
 <section class="dashboard">
-  <a routerLink="/publicaciones" class="volver">← Publicaciones</a>
-  <h1>Estadísticas</h1>
+  <header class="encabezado">
+    <a routerLink="/publicaciones" class="volver">← Publicaciones</a>
+    <h1>Estadísticas</h1>
+  </header>
 
   <form class="filtros" [formGroup]="formulario" (ngSubmit)="aplicarFiltros()">
     <label>Desde<input type="date" formControlName="desde" /></label>

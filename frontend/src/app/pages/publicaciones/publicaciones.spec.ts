@@ -194,11 +194,6 @@ describe('Publicaciones (pantalla)', () => {
   });
 
   describe('diseño del feed', () => {
-    it('reutiliza el fondo de Mosaico del login y no intercepta clics', () => {
-      responder(pedido(), ['a']);
-      expect(el().querySelectorAll('app-mosaico-fondo')).toHaveLength(1);
-    });
-
     it('NO muestra comentarios ni formularios para comentar: solo el detalle los tiene', () => {
       responder(pedido(), ['a', 'b', 'c']);
       expect(el().querySelector('textarea')).toBeNull();

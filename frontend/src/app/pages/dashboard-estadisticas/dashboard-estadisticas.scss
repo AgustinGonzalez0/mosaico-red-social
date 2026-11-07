@@ -195,3 +195,9 @@ input {
 .error {
   color: #a00;
 }
+
+
+/* Paneles translúcidos para que el título y los avisos se lean sobre el fondo decorativo. */
+.encabezado{padding:18px 24px;margin-bottom:16px;border-radius:28px;background:rgb(255 255 255/.9);backdrop-filter:blur(10px);box-shadow:0 2px 6px #0000000d,0 10px 30px #00000014}
+.encabezado h1{margin:.25rem 0 0}
+.dashboard>p{width:fit-content;max-width:100%;padding:12px 18px;margin:16px 0;border-radius:16px;background:rgb(255 255 255/.94)}

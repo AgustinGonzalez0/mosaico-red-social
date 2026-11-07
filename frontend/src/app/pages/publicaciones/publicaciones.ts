@@ -7,7 +7,6 @@ import { OrdenPublicaciones, Publicacion } from '../../core/models/publicacion.m
 import { mensajeDeError } from '../../core/services/auth.service';
 import { PublicacionesService } from '../../core/services/publicaciones.service';
 import { CrearPublicacion } from '../../shared/crear-publicacion/crear-publicacion';
-import { MosaicoFondo } from '../../shared/mosaico-fondo/mosaico-fondo';
 import { PostCard } from '../../shared/post-card/post-card';
 
 /** Cantidad de publicaciones por página (parámetro `limit` de la API). */
@@ -20,7 +19,7 @@ const ORDENES: { valor: OrdenPublicaciones; texto: string }[] = [
 
 @Component({
   selector: 'app-publicaciones',
-  imports: [PostCard, CrearPublicacion, MosaicoFondo, RouterLink],
+  imports: [PostCard, CrearPublicacion, RouterLink],
   templateUrl: './publicaciones.html',
   styleUrl: './publicaciones.scss',
 })
