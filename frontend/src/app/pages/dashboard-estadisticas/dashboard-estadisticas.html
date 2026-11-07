@@ -1,1 +1,117 @@
-<section class="dashboard"><a routerLink="/publicaciones" class="volver">← Publicaciones</a><h1>Estadísticas</h1><form class="filtros" [formGroup]="formulario" (ngSubmit)="aplicarFiltros()"><label>Desde<input type="date" formControlName="desde"></label><label>Hasta<input type="date" formControlName="hasta"></label><button class="btn primary" [disabled]="cargando()">{{ cargando() ? 'Cargando…' : 'Aplicar filtros' }}</button></form>@if (error(); as mensaje) { <p class="error" role="alert">{{ mensaje }}</p> } @if (cargando()) { <p role="status">Consultando estadísticas…</p> } @if (datos(); as d) { <div class="graficos"><article class="grafico"><h2>Publicaciones por usuario</h2><p>Período: {{ formulario.controls.desde.value }} a {{ formulario.controls.hasta.value }}</p><div class="barras">@for (item of d.publicaciones; track item.usuarioId) { <div class="barra-fila"><span>{{ item.nombreUsuario }}</span><div class="barra"><i [style.width.%]="porcentaje(item.cantidad, maxPublicaciones())"></i></div><b>{{ item.cantidad }}</b></div>} @empty { <p>No hay publicaciones en este período.</p> }</div></article><article class="grafico"><h2>Comentarios por fecha</h2><p>Total del período: <strong>{{ totalComentarios() }}</strong></p><svg class="linea" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="Evolución de comentarios por día"><polyline [attr.points]="puntosLinea()" fill="none" stroke="#e60023" stroke-width="2" vector-effect="non-scaling-stroke" /></svg></article><article class="grafico"><h2>Comentarios por publicación</h2><div class="dona" [style.background]="fondoDona()"></div><ul class="leyenda">@for (item of d.publicacionesComentarios; track item.publicacionId) { <li><span>{{ item.titulo }}</span><b>{{ item.cantidad }}</b></li>} @empty { <li>No hay comentarios en este período.</li> }</ul></article></div> }</section>
+<section class="dashboard">
+  <a routerLink="/publicaciones" class="volver">← Publicaciones</a>
+  <h1>Estadísticas</h1>
+
+  <form class="filtros" [formGroup]="formulario" (ngSubmit)="aplicarFiltros()">
+    <label>Desde<input type="date" formControlName="desde" /></label>
+    <label>Hasta<input type="date" formControlName="hasta" /></label>
+    <button class="btn primary" [disabled]="cargando()">
+      {{ cargando() ? 'Cargando…' : 'Aplicar filtros' }}
+    </button>
+  </form>
+
+  @if (error(); as mensaje) {
+    <p class="error" role="alert">{{ mensaje }}</p>
+  }
+  @if (cargando()) {
+    <p role="status">Consultando estadísticas…</p>
+  }
+
+  @if (datos(); as d) {
+    <div class="graficos">
+      <article class="grafico">
+        <h2>Publicaciones por usuario</h2>
+        <p>Período: {{ formulario.controls.desde.value }} a {{ formulario.controls.hasta.value }}</p>
+        <div class="barras">
+          @for (item of d.publicaciones; track item.usuarioId) {
+            <div class="barra-fila">
+              <span>{{ item.nombreUsuario }}</span>
+              <div class="barra"><i [style.width.%]="porcentaje(item.cantidad, maxPublicaciones())"></i></div>
+              <b>{{ item.cantidad }}</b>
+            </div>
+          } @empty {
+            <p>No hay publicaciones en este período.</p>
+          }
+        </div>
+      </article>
+
+      <article class="grafico ancho-doble">
+        @let g = grafico();
+        <h2>Comentarios por fecha</h2>
+        <p>Total del período: <strong>{{ totalComentarios() }}</strong></p>
+
+        <div class="lienzo" #lienzo>
+          <svg
+            class="linea"
+            [attr.viewBox]="'0 0 ' + g.ancho + ' ' + g.alto"
+            [attr.width]="g.ancho"
+            [attr.height]="g.alto"
+            role="img"
+            aria-label="Evolución de comentarios por día, con los picos de actividad señalados"
+          >
+            <defs>
+              <linearGradient id="relleno-comentarios" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#e60023" stop-opacity="0.22" />
+                <stop offset="100%" stop-color="#e60023" stop-opacity="0" />
+              </linearGradient>
+            </defs>
+
+            @for (m of g.marcasY; track m.valor) {
+              <line class="rejilla" [attr.x1]="g.izquierda" [attr.x2]="g.derecha" [attr.y1]="m.y" [attr.y2]="m.y" />
+              <text class="eje" text-anchor="end" [attr.x]="g.izquierda - 8" [attr.y]="m.y + 4">{{ m.valor }}</text>
+            }
+            @for (m of g.marcasX; track m.x) {
+              <text class="eje" text-anchor="middle" [attr.x]="m.x" [attr.y]="g.base + 22">{{ m.texto }}</text>
+            }
+
+            @if (g.area) {
+              <path class="area" [attr.d]="g.area" fill="url(#relleno-comentarios)" />
+              <polyline class="serie" [attr.points]="g.linea" fill="none" />
+            }
+
+            @for (p of g.picos; track p.indice) {
+              <circle class="pico" [class.maximo]="p.esMaximo" [attr.cx]="p.x" [attr.cy]="p.y" r="6">
+                <title>{{ fecha(p.fecha, true) }} · {{ comentarios(p.cantidad) }}</title>
+              </circle>
+              @if (p.etiquetaVisible) {
+                <text class="etiqueta" [attr.text-anchor]="p.anclaje" [attr.x]="p.etiquetaX" [attr.y]="p.etiquetaY">
+                  {{ p.etiqueta }}
+                </text>
+              }
+            }
+          </svg>
+        </div>
+
+        @if (g.vacio) {
+          <p class="sin-datos">No hubo comentarios en este período.</p>
+        } @else {
+          <h3 class="subtitulo">Picos de actividad</h3>
+          <ul class="picos">
+            @for (p of g.picos; track p.indice) {
+              <li [class.maximo]="p.esMaximo">
+                <span class="fecha">
+                  {{ fecha(p.fecha, true) }}
+                  @if (p.fechaFin !== p.fecha) { al {{ fecha(p.fechaFin, true) }} }
+                </span>
+                <b>{{ comentarios(p.cantidad) }}</b>
+                @if (p.esMaximo) { <em>máximo</em> }
+              </li>
+            }
+          </ul>
+        }
+      </article>
+
+      <article class="grafico">
+        <h2>Comentarios por publicación</h2>
+        <div class="dona" [style.background]="fondoDona()"></div>
+        <ul class="leyenda">
+          @for (item of d.publicacionesComentarios; track item.publicacionId) {
+            <li><span>{{ item.titulo }}</span><b>{{ item.cantidad }}</b></li>
+          } @empty {
+            <li>No hay comentarios en este período.</li>
+          }
+        </ul>
+      </article>
+    </div>
+  }
+</section>

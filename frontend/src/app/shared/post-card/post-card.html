@@ -1,13 +1,16 @@
-<article class="pin" [attr.aria-busy]="ocupada()">
+<article class="pin" [class.sin-imagen]="!publicacion().imagen" [attr.aria-busy]="ocupada()">
   @if (auth.urlImagen(publicacion().imagen); as src) {
-    <img
-      class="foto"
-      [src]="src"
-      [attr.width]="publicacion().ancho"
-      [attr.height]="publicacion().alto"
-      [alt]="publicacion().titulo"
-      loading="lazy"
-    />
+    <div class="imagen">
+      <img
+        class="foto"
+        [src]="src"
+        [attr.width]="publicacion().ancho"
+        [attr.height]="publicacion().alto"
+        [alt]="publicacion().titulo"
+        loading="lazy"
+        decoding="async"
+      />
+    </div>
   }
   <div class="cuerpo">
     <h3><a [routerLink]="['/publicaciones', publicacion().id]">{{ publicacion().titulo }}</a></h3>
@@ -15,7 +18,7 @@
     <div class="pie">
       <div class="autor">
         @if (auth.urlImagen(publicacion().autor.imagenPerfil); as foto) {
-          <img class="avatar" [src]="foto" alt="" width="32" height="32" />
+          <img class="avatar" [src]="foto" alt="" width="40" height="40" />
         } @else {
           <span class="avatar chico" aria-hidden="true">{{ inicial() }}</span>
         }

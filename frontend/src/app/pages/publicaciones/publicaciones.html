@@ -1,5 +1,7 @@
-<div class="encabezado">
-  <div>
+<app-mosaico-fondo [suave]="true" />
+
+<header class="encabezado">
+  <div class="titulo">
     <h1>Descubrí ideas</h1>
     <p>Publicaciones de la comunidad Mosaico</p>
   </div>
@@ -21,7 +23,7 @@
       <span aria-hidden="true">+</span> Crear publicación
     </button>
   </div>
-</div>
+</header>
 
 <div class="contenido">
   @if (error(); as e) {
@@ -35,13 +37,13 @@
       </div>
     </div>
   } @else if (cargando() && !publicaciones().length) {
-    <div class="muro" aria-busy="true" aria-label="Cargando publicaciones">
+    <div class="feed" aria-busy="true" aria-label="Cargando publicaciones">
       @for (n of esqueletos; track n) {
-        <div class="esqueleto" [style.height.px]="150 + (n % 4) * 55"></div>
+        <div class="esqueleto" [style.height.px]="380 + (n % 3) * 60"></div>
       }
     </div>
   } @else if (publicaciones().length) {
-    <div class="muro" [class.recargando]="cargando()" [attr.aria-busy]="cargando()">
+    <div class="feed" [class.recargando]="cargando()" [attr.aria-busy]="cargando()">
       @for (p of publicaciones(); track p.id) {
         <app-post-card [publicacion]="p" (eliminada)="alEliminar($event)" />
       }

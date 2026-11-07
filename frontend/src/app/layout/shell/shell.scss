@@ -42,6 +42,11 @@
   }
 }
 
+.admin-links {
+  display: flex;
+  gap: 4px;
+}
+
 .acciones {
   display: flex;
   align-items: center;
@@ -79,8 +84,16 @@
     display: none;
   }
 
+  /* Los enlaces pasan a su propia fila y no se parten en dos líneas. */
+  .enlaces {
+    order: 3;
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+  }
+
   .enlaces a {
     padding: 8px 12px;
+    white-space: nowrap;
   }
 
   .acciones .btn {

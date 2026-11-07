@@ -13,7 +13,7 @@ import {
   tokenDePrueba,
   usuarioDePrueba,
 } from './testing/fixtures';
-import { App } from './app';
+import { App, DURACION_MINIMA_CARGA } from './app';
 
 const API = environment.apiUrl;
 const ID = '64b7f0f0f0f0f0f0f0f0f0f0';
@@ -27,11 +27,18 @@ describe('Arranque y navegación de Mosaico con el Router real', () => {
   let navegacionInicial: Promise<NavigationEnd>;
   let eventos: Subscription;
   let destinos: string[];
+  let duracionMinima = 0;
 
   beforeEach(() => {
+    duracionMinima = 0;
     localStorage.clear();
     TestBed.configureTestingModule({
-      providers: [...appConfig.providers, provideHttpClientTesting(), provideLocationMocks()],
+      providers: [
+        ...appConfig.providers,
+        provideHttpClientTesting(),
+        provideLocationMocks(),
+        { provide: DURACION_MINIMA_CARGA, useFactory: () => duracionMinima }, // por defecto sin demora visual
+      ],
     });
     http = TestBed.inject(HttpTestingController);
     router = TestBed.inject(Router);
@@ -213,5 +220,115 @@ describe('Arranque y navegación de Mosaico con el Router real', () => {
     await autorizar();
     expect(router.url).toBe('/publicaciones');
     expect(destinos).toEqual(['/publicaciones']);
+  });
+
+  describe('pantalla de carga con la duración mínima real (2.500 ms)', () => {
+    const MINIMO = 2500;
+    const elemento = () => fixture.nativeElement as HTMLElement;
+
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] });
+      duracionMinima = MINIMO; // se lee recién al crear App
+    });
+    afterEach(() => vi.useRealTimers());
+
+    const enPantallaDeCarga = () => {
+      expect(elemento().querySelector('.spinner')).not.toBeNull();
+      expect(elemento().querySelector('router-outlet')).toBeNull();
+      expect(elemento().querySelector('app-shell')).toBeNull();
+      expect(elemento().querySelector('app-publicaciones')).toBeNull();
+      expect(router.navigated).toBe(false);
+    };
+
+    it('es accesible: role="status", aria-busy y el texto «Validando tu sesión…»', () => {
+      abrir('/publicaciones', tokenDePrueba());
+      const region = elemento().querySelector('[role="status"]')!;
+      expect(region.getAttribute('aria-busy')).toBe('true');
+      expect(region.textContent).toContain('Mosaico');
+      expect(region.textContent).toContain('Validando tu sesión…');
+      http.expectOne(`${API}/auth/autorizar`).flush(usuarioDePrueba());
+      return vi.advanceTimersByTimeAsync(MINIMO).then(completarNavegacion);
+    });
+
+    it('token válido: consulta enseguida, pero no muestra contenido antes de los 2.500 ms', async () => {
+      abrir('/publicaciones', tokenDePrueba());
+      const pedido = http.expectOne(`${API}/auth/autorizar`); // la validación real empieza de inmediato
+      await vi.advanceTimersByTimeAsync(100);
+      pedido.flush(usuarioDePrueba());
+      await vi.advanceTimersByTimeAsync(MINIMO - 100 - 1);
+      fixture.detectChanges();
+      enPantallaDeCarga();
+      expect(destinos).toEqual([]);
+
+      await vi.advanceTimersByTimeAsync(1);
+      await completarNavegacion();
+      expect(router.url).toBe('/publicaciones');
+      expect(elemento().querySelector('app-publicaciones')).not.toBeNull();
+      expect(elemento().querySelector('.spinner')).toBeNull();
+    });
+
+    it('si el servidor tarda más de 2.500 ms, la pantalla espera su respuesta', async () => {
+      abrir('/publicaciones', tokenDePrueba());
+      const pedido = http.expectOne(`${API}/auth/autorizar`);
+      await vi.advanceTimersByTimeAsync(4000);
+      fixture.detectChanges();
+      enPantallaDeCarga(); // pasó el mínimo, pero el backend todavía no confirmó
+      pedido.flush(usuarioDePrueba());
+      await completarNavegacion();
+      expect(router.url).toBe('/publicaciones');
+      expect(elemento().querySelector('.spinner')).toBeNull();
+    });
+
+    it('token rechazado (401): también espera el mínimo y termina en el login sin renovar', async () => {
+      abrir(DETALLE, tokenDePrueba(Date.now() - 16 * 60_000));
+      http.expectOne(`${API}/auth/autorizar`).flush(null, { status: 401, statusText: 'Unauthorized' });
+      await vi.advanceTimersByTimeAsync(MINIMO - 1);
+      fixture.detectChanges();
+      enPantallaDeCarga();
+      await vi.advanceTimersByTimeAsync(1);
+      await completarNavegacion();
+      expect(TestBed.inject(AuthService).token()).toBeNull();
+      expect(router.url).toBe('/login');
+      expect(elemento().querySelector('app-login')).not.toBeNull();
+      http.expectNone(`${API}/auth/refrescar`);
+    });
+
+    it('sin token no consulta al backend ni agrega demora', async () => {
+      abrir('/publicaciones');
+      await completarNavegacion(); // sin avanzar el reloj
+      expect(router.url).toBe('/login');
+      expect(elemento().querySelector('app-login')).not.toBeNull();
+      http.expectNone(`${API}/auth/autorizar`);
+    });
+
+    it('sin conexión: muestra el error enseguida (no es un JWT inválido), conserva el token y permite reintentar', async () => {
+      const token = tokenDePrueba();
+      abrir(DETALLE, token);
+      http.expectOne(`${API}/auth/autorizar`).error(new ProgressEvent('error'));
+      fixture.detectChanges();
+      expect(elemento().querySelector('[role="alert"]')!.textContent).toContain('No se pudo conectar');
+      expect(TestBed.inject(AuthService).token()).toBe(token);
+      expect(elemento().querySelector('router-outlet')).toBeNull();
+      expect(destinos).toEqual([]);
+
+      elemento().querySelector<HTMLButtonElement>('button')!.click();
+      fixture.detectChanges();
+      expect(elemento().querySelector('.spinner')).not.toBeNull();
+      http.expectOne(`${API}/auth/autorizar`).flush(usuarioDePrueba());
+      await vi.advanceTimersByTimeAsync(MINIMO);
+      await completarNavegacion();
+      expect(router.url).toBe(DETALLE);
+    });
+
+    it('nunca inicia dos validaciones simultáneas', async () => {
+      abrir('/publicaciones', tokenDePrueba());
+      const app = fixture.componentInstance as unknown as { validarSesion(): void };
+      app.validarSesion();
+      app.validarSesion();
+      http.expectOne(`${API}/auth/autorizar`).flush(usuarioDePrueba()); // falla si hubiera más de uno
+      await vi.advanceTimersByTimeAsync(MINIMO);
+      await completarNavegacion();
+      expect(destinos).toEqual(['/publicaciones']);
+    });
   });
 });

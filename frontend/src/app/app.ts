@@ -1,54 +1,42 @@
 import { Location } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { Component, DestroyRef, InjectionToken, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterOutlet } from '@angular/router';
+import { catchError, finalize, map, of, switchMap, timer } from 'rxjs';
 import { Modal } from './shared/modal/modal';
+import { PantallaCarga } from './shared/pantalla-carga/pantalla-carga';
 import { AuthService, mensajeDeError } from './core/services/auth.service';
 
+/** Tiempo mínimo (ms) que se ve la pantalla de carga al validar una sesión guardada. */
+export const DURACION_MINIMA_CARGA = new InjectionToken<number>('DURACION_MINIMA_CARGA', {
+  providedIn: 'root',
+  factory: () => 2500,
+});
+
+type Validacion =
+  | { tipo: 'valida' }
+  | { tipo: 'rechazada' } // el backend respondió 401: el JWT no sirve
+  | { tipo: 'fallo'; error: unknown }; // sin conexión, 500...: no significa que el JWT sea inválido
+
 @Component({
-  imports: [RouterOutlet, Modal],
+  imports: [RouterOutlet, Modal, PantallaCarga],
   selector: 'app-root',
   template: `
-    @if (cargando()) {
-      <main class="inicio" aria-busy="true" role="status">
-        <span class="spinner" aria-hidden="true"></span>
-        <h1>Mosaico</h1>
-        <p>Validando tu sesión…</p>
-      </main>
-    } @else if (error(); as mensaje) {
-      <main class="inicio">
-        <h1>No pudimos iniciar Mosaico</h1>
-        <p role="alert">{{ mensaje }}</p>
-        <button class="btn primary" type="button" (click)="validarSesion()">Reintentar</button>
-      </main>
+    @if (cargando() || error()) {
+      <app-pantalla-carga [error]="error()" (reintentar)="validarSesion()" />
     } @else {
-      <router-outlet />
+      <div class="contenido-app"><router-outlet /></div>
     }
     <app-modal />
   `,
   styles: `
-    .inicio {
-      min-height: 100dvh;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      gap: 20px;
-      padding: 24px;
-      text-align: center;
+    .contenido-app {
+      animation: aparecer 0.4s ease-out;
     }
-    .spinner {
-      width: 48px;
-      height: 48px;
-      border: 5px solid var(--surface);
-      border-top-color: var(--red);
-      border-radius: 50%;
-      animation: girar 0.8s linear infinite;
-    }
-    @keyframes girar {
-      to {
-        transform: rotate(360deg);
+    @keyframes aparecer {
+      from {
+        opacity: 0;
       }
     }
   `,
@@ -58,7 +46,9 @@ export class App implements OnInit {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly ubicacion = inject(Location);
+  private readonly duracionMinima = inject(DURACION_MINIMA_CARGA);
   private destinoInicial = '/';
+  private validando = false;
   protected readonly cargando = signal(true);
   protected readonly error = signal<string | null>(null);
 
@@ -67,30 +57,51 @@ export class App implements OnInit {
     this.validarSesion();
   }
 
+  /**
+   * La validación real (POST /auth/autorizar) empieza de inmediato. La pantalla se oculta recién
+   * cuando ocurrieron las dos cosas: el backend respondió Y pasó la duración mínima.
+   */
   protected validarSesion(): void {
+    if (this.validando) return; // nunca dos validaciones simultáneas
     this.error.set(null);
     this.cargando.set(true);
     if (!this.auth.token()) {
+      // Sin token no hay nada que validar: no se consulta al backend ni se muestra demora.
       this.auth.logout();
       this.abrirRutaInicial();
       return;
     }
+    this.validando = true;
+    const inicio = Date.now();
     this.auth
       .autorizar()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: () => {
-          this.abrirRutaInicial();
-        },
-        error: (error) => {
-          if (error instanceof HttpErrorResponse && error.status === 401) {
-            this.auth.logout();
-            this.abrirRutaInicial();
-          } else {
-            this.cargando.set(false);
-            this.error.set(mensajeDeError(error));
-          }
-        },
+      .pipe(
+        map((): Validacion => ({ tipo: 'valida' })),
+        catchError((error: unknown) =>
+          of<Validacion>(
+            error instanceof HttpErrorResponse && error.status === 401
+              ? { tipo: 'rechazada' }
+              : { tipo: 'fallo', error },
+          ),
+        ),
+        // Un fallo de conexión se informa enseguida; los demás resultados esperan lo que falte.
+        switchMap((resultado) => {
+          const falta = this.duracionMinima - (Date.now() - inicio);
+          return resultado.tipo === 'fallo' || falta <= 0
+            ? of(resultado)
+            : timer(falta).pipe(map(() => resultado));
+        }),
+        finalize(() => (this.validando = false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((resultado) => {
+        if (resultado.tipo === 'fallo') {
+          this.cargando.set(false);
+          this.error.set(mensajeDeError(resultado.error));
+          return;
+        }
+        if (resultado.tipo === 'rechazada') this.auth.logout();
+        this.abrirRutaInicial();
       });
   }
 

@@ -192,4 +192,47 @@ describe('Publicaciones (pantalla)', () => {
     expect(tarjetas()).toHaveLength(2);
     TestBed.inject(ModalService).cerrar();
   });
+
+  describe('diseño del feed', () => {
+    it('reutiliza el fondo de Mosaico del login y no intercepta clics', () => {
+      responder(pedido(), ['a']);
+      expect(el().querySelectorAll('app-mosaico-fondo')).toHaveLength(1);
+    });
+
+    it('NO muestra comentarios ni formularios para comentar: solo el detalle los tiene', () => {
+      responder(pedido(), ['a', 'b', 'c']);
+      expect(el().querySelector('textarea')).toBeNull();
+      expect(el().querySelector('form')).toBeNull();
+      expect(el().querySelector('.comentarios, .comentario, #titulo-comentarios')).toBeNull();
+      expect(el().textContent).not.toContain('Comentar');
+    });
+
+    it('cada tarjeta lleva al detalle /publicaciones/:id', () => {
+      responder(pedido(), ['a', 'b']);
+      const enlaces = Array.from(el().querySelectorAll<HTMLAnchorElement>('app-post-card h3 a'));
+      expect(enlaces.map((a) => a.getAttribute('href'))).toEqual(['/publicaciones/a-0', '/publicaciones/b-1']);
+    });
+
+    it('muestra imágenes horizontales, verticales y publicaciones sin imagen', () => {
+      const req = pedido();
+      req.flush(
+        paginadoDePrueba([
+          publicacionDePrueba({ id: 'h', imagen: 'https://x.test/h.jpg', ancho: 1600, alto: 900 }),
+          publicacionDePrueba({ id: 'v', imagen: 'https://x.test/v.jpg', ancho: 600, alto: 1800 }),
+          publicacionDePrueba({ id: 's', imagen: null }),
+        ]),
+      );
+      fixture.detectChanges();
+      const imagenes = Array.from(el().querySelectorAll<HTMLImageElement>('.foto'));
+      expect(imagenes).toHaveLength(2);
+      // width/height reservan la proporción real y evitan saltos de diseño; la carga es diferida.
+      expect(imagenes.map((i) => [i.getAttribute('width'), i.getAttribute('height')])).toEqual([
+        ['1600', '900'],
+        ['600', '1800'],
+      ]);
+      expect(imagenes.every((i) => i.getAttribute('loading') === 'lazy')).toBe(true);
+      expect(tarjetas()[2].querySelector('.foto')).toBeNull();
+      expect(tarjetas()[2].querySelector('.sin-imagen')).not.toBeNull();
+    });
+  });
 });

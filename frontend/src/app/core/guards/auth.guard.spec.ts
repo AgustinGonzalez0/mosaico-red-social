@@ -33,14 +33,14 @@ describe('authGuard', () => {
     expect(auth.logout).not.toHaveBeenCalled();
   });
 
-  it('un token que venció cierra la sesión y devuelve el login', () => {
+  it('un JWT vencido según el reloj local no bloquea la navegación: lo decide el 401 del backend', () => {
     const auth = authDePrueba(usuarioDePrueba());
     auth.tokenVigente = () => false;
     vi.spyOn(auth, 'logout');
     TestBed.configureTestingModule({
       providers: [provideRouter([]), { provide: AuthService, useValue: auth }],
     });
-    expect(ejecutar()).toEqual(TestBed.inject(Router).createUrlTree(['/login']));
-    expect(auth.logout).toHaveBeenCalledOnce();
+    expect(ejecutar()).toBe(true);
+    expect(auth.logout).not.toHaveBeenCalled();
   });
 });

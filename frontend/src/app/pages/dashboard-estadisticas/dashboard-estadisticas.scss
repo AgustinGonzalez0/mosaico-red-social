@@ -1,1 +1,197 @@
-.dashboard{max-width:1150px;margin:0 auto;padding:28px 20px}.volver{color:var(--red)}h1{margin:.5rem 0 1rem}.filtros{display:flex;align-items:end;gap:14px;flex-wrap:wrap;background:var(--surface);padding:16px;border-radius:14px}.filtros label{display:flex;flex-direction:column;gap:5px}input{font:inherit;padding:9px;border:1px solid #ddd;border-radius:8px}.graficos{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px;margin-top:22px}.grafico{background:var(--surface);padding:18px;border-radius:16px;box-shadow:0 4px 20px #0001}.grafico h2{font-size:1.1rem}.barra-fila{display:grid;grid-template-columns:100px 1fr 25px;gap:8px;align-items:center;margin:10px 0}.barra{height:14px;background:#eee;border-radius:9px;overflow:hidden}.barra i{display:block;height:100%;background:var(--red);border-radius:9px}.linea{height:180px;display:flex;align-items:end;gap:4px;border-bottom:1px solid #ddd;padding:10px 0}.linea span{flex:1;min-width:4px;background:#e60023;border-radius:4px 4px 0 0}.dona{width:170px;height:170px;margin:16px auto;border-radius:50%;background:conic-gradient(#e60023 0 35%,#ff8c42 35% 60%,#6c63ff 60% 80%,#29a36a 80%);position:relative}.dona:after{content:'';position:absolute;inset:42px;background:var(--surface);border-radius:50%}.leyenda{list-style:none;padding:0}.leyenda li{display:flex;justify-content:space-between;border-bottom:1px solid #eee;padding:8px 0}.error{color:#a00}
+.dashboard {
+  max-width: 1150px;
+  margin: 0 auto;
+  padding: 28px 20px;
+}
+.volver {
+  color: var(--red);
+}
+h1 {
+  margin: 0.5rem 0 1rem;
+}
+.filtros {
+  display: flex;
+  align-items: end;
+  gap: 14px;
+  flex-wrap: wrap;
+  background: var(--surface);
+  padding: 16px;
+  border-radius: 14px;
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+}
+input {
+  font: inherit;
+  padding: 9px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+.graficos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 18px;
+  margin-top: 22px;
+}
+.grafico {
+  min-width: 0;
+  background: var(--surface);
+  padding: 18px;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px #0001;
+
+  h2 {
+    font-size: 1.1rem;
+  }
+}
+/* El gráfico de líneas necesita más ancho para que se lean las fechas. */
+.ancho-doble {
+  grid-column: 1 / -1;
+}
+.barra-fila {
+  display: grid;
+  grid-template-columns: 100px 1fr 25px;
+  gap: 8px;
+  align-items: center;
+  margin: 10px 0;
+}
+.barra {
+  height: 14px;
+  background: #eee;
+  border-radius: 9px;
+  overflow: hidden;
+
+  i {
+    display: block;
+    height: 100%;
+    background: var(--red);
+    border-radius: 9px;
+  }
+}
+
+/* ---------- Comentarios por fecha ---------- */
+.lienzo {
+  width: 100%;
+  min-width: 0;
+  margin-top: 8px;
+  border-radius: 12px;
+  background: #fff;
+}
+.linea {
+  display: block;
+  max-width: 100%;
+  overflow: visible;
+}
+.rejilla {
+  stroke: #e4e4e4;
+  stroke-width: 1;
+}
+.eje {
+  fill: var(--muted);
+  font-size: 12px;
+}
+.area {
+  stroke: none;
+}
+.serie {
+  stroke: var(--red);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.pico {
+  fill: var(--red);
+  stroke: #fff;
+  stroke-width: 2.5;
+
+  &.maximo {
+    fill: var(--red-dark);
+  }
+}
+.etiqueta {
+  fill: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+  /* Contorno blanco: la etiqueta se lee aunque la línea pase por detrás. */
+  stroke: #fff;
+  stroke-width: 4px;
+  paint-order: stroke;
+}
+.sin-datos {
+  margin-top: 12px;
+  color: var(--muted);
+  text-align: center;
+}
+.subtitulo {
+  margin: 16px 0 6px;
+  font-size: 0.95rem;
+}
+.picos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 18px;
+    background: #fff;
+    font-size: 0.9rem;
+  }
+
+  .fecha {
+    color: var(--muted);
+  }
+
+  .maximo {
+    outline: 2px solid var(--red);
+  }
+
+  em {
+    color: var(--red-dark);
+    font-size: 0.75rem;
+    font-style: normal;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+}
+
+/* ---------- Comentarios por publicación ---------- */
+.dona {
+  width: 170px;
+  height: 170px;
+  margin: 16px auto;
+  border-radius: 50%;
+  background: conic-gradient(#e60023 0 35%, #ff8c42 35% 60%, #6c63ff 60% 80%, #29a36a 80%);
+  position: relative;
+
+  &:after {
+    content: '';
+    position: absolute;
+    inset: 42px;
+    background: var(--surface);
+    border-radius: 50%;
+  }
+}
+.leyenda {
+  list-style: none;
+  padding: 0;
+
+  li {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid #eee;
+    padding: 8px 0;
+  }
+}
+.error {
+  color: #a00;
+}

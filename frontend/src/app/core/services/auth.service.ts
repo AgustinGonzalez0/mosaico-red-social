@@ -97,13 +97,18 @@ export class AuthService implements OnDestroy {
     return this.vencimiento() > Date.now();
   }
 
-  /** Un solo temporizador: primero el aviso, después el vencimiento real del JWT. */
+  /**
+   * Un solo temporizador que solo sirve para el AVISO de los cinco minutos.
+   * Nunca cierra la sesión: el vencimiento real lo decide el backend, que responde 401 en la próxima
+   * petición protegida, y es el interceptor quien limpia la sesión y redirige al login.
+   */
   comprobarVencimiento(): void {
     clearTimeout(this.temporizador);
     if (!this.autenticado()) return;
     const restante = this.vencimiento() - Date.now();
     if (restante <= 0) {
-      this.cerrarSesion();
+      // JWT vencido: ya no tiene sentido ofrecer extenderlo, pero tampoco se expulsa al usuario.
+      if (this.avisoAbierto) this.modal.cerrar();
       return;
     }
     const avisado = this.tokenAvisado === this.token();
@@ -118,7 +123,7 @@ export class AuthService implements OnDestroy {
     const token = this.token();
     this.tokenAvisado = token;
     this.guardarAlmacenamiento(AVISO_KEY, token);
-    this.comprobarVencimiento(); // Programa el cierre aunque el modal quede abierto.
+    this.comprobarVencimiento(); // Programa el cierre del aviso al vencer, aunque el modal siga abierto.
     this.avisoAbierto = true;
     const aceptado = await this.modal.confirmar(
       'Tu sesión está por vencer',
@@ -127,11 +132,8 @@ export class AuthService implements OnDestroy {
       'Ahora no',
     );
     this.avisoAbierto = false;
-    if (!aceptado || token !== this.token()) return;
-    if (!this.tokenVigente()) {
-      this.cerrarSesion();
-      return;
-    }
+    // Sin aceptación explícita no se renueva; con el JWT ya vencido tampoco (el backend lo rechazaría).
+    if (!aceptado || token !== this.token() || !this.tokenVigente()) return;
     this.refrescar()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
